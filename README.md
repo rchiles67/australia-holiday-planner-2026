@@ -2,6 +2,8 @@
 
 A flexible, visual planner for a 3–4 week Australia trip, currently centred on South West Western Australia and Tasmania. The live site is designed to be shared as a permanent read-only starting plan while each visitor’s experiments save in their own browser.
 
+Open the published planner at <https://rchiles67.github.io/australia-holiday-planner-2026/>.
+
 ## How sharing works
 
 - The GitHub Pages site always shows the latest plan published from `main`.
@@ -30,6 +32,8 @@ This deliberately avoids accounts, a database and accidental overwrites. Do not 
 npm install
 npm run dev
 ```
+
+Then open <http://localhost:5173/> on this computer.
 
 Create a production build with `npm run build`.
 

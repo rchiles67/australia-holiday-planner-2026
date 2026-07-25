@@ -10,6 +10,7 @@ All bundled travel photographs were selected from Wikimedia Commons with a licen
 | `albany-coast.jpg` | Coast near Albany | CSIRO | CC BY 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:CSIRO_ScienceImage_2482_Coast_near_Albany_Western_Australia.jpg) |
 | `lucky-bay.jpg` | Lucky Bay | DaHuzyBru | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Lucky_Bay,_Cape_Le_Grand_National_Park,_January_2025_01.jpg) |
 | `tas-hobart-salamanca.jpg` | Salamanca Place and kunanyi | Cheng Fei | CC BY-SA 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hobart_Tasmania_Salamanca_Place.jpg) |
+| `hobart-panorama.jpg` | Greater Hobart from Mount Wellington | JJ Harrison | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hobart_from_Mount_Wellington_Panorama_1.jpg) |
 | `tasman-cliffs.jpg` | Cape Huay sea cliffs | Mooonrise | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:The_spectacular_sea_cliffs_of_Cape_Huay,_Tasman_National_Park,_Tasmania.jpg) |
 | `wineglass-bay.jpg` | Wineglass Bay | JJ Harrison | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Wineglass_Bay_from_Lookout.jpg) |
 | `bay-of-fires.jpg` | Bay of Fires | Diego Delso | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Bay_of_Fires-02.jpg) |

@@ -9,8 +9,11 @@ import Timeline from './components/Timeline.jsx'
 import { scenarios, seedBookmarks, seedIdeas } from './data.js'
 
 const STORAGE_KEY = 'drift-australia-2026-v1'
-const DATA_VERSION = 3
+const DATA_VERSION = 4
 const seedIdeaById = new Map(seedIdeas.map((idea) => [idea.id, idea]))
+const seedBookmarkById = new Map(seedBookmarks.map((bookmark) => [bookmark.id, bookmark]))
+const V4_GALLERY_ADDITIONS = new Map([['tas-hobart', ['url-1784973561723']]])
+const V4_BOOKMARK_ADDITIONS = ['photo-hobart-panorama']
 
 function dateFromInput(value) {
   return new Date(`${value}T12:00:00`)
@@ -32,18 +35,41 @@ function loadState() {
     const ideas = saved.ideas.map((savedIdea) => {
       const currentSeed = seedIdeaById.get(savedIdea.id)
       if (!currentSeed) return savedIdea
-      const hadCustomGallery = Array.isArray(savedIdea.gallery)
+      const currentGalleryById = new Map((currentSeed.gallery || []).map((image) => [image.id, image]))
+      const hadSavedGallery = Array.isArray(savedIdea.gallery)
+      const gallery = (hadSavedGallery ? savedIdea.gallery : currentSeed.gallery || []).map((image) => (
+        currentGalleryById.has(image.id) ? { ...image, ...currentGalleryById.get(image.id) } : image
+      ))
+      if ((saved.version || 0) < 4) {
+        const savedGalleryIds = new Set(gallery.map((image) => image.id))
+        ;(V4_GALLERY_ADDITIONS.get(savedIdea.id) || [])
+          .filter((id) => !savedGalleryIds.has(id) && currentGalleryById.has(id))
+          .forEach((id) => gallery.push(currentGalleryById.get(id)))
+      }
+      const coverImageId = savedIdea.coverImageId || currentSeed.coverImageId
+      const coverImage = gallery.find((image) => image.id === coverImageId)
       return {
         ...currentSeed,
         ...savedIdea,
         coordinates: currentSeed.coordinates,
         mapLabel: currentSeed.mapLabel,
-        image: hadCustomGallery ? savedIdea.image : currentSeed.image,
-        gallery: hadCustomGallery ? savedIdea.gallery : currentSeed.gallery,
+        gallery,
+        coverImageId,
+        image: coverImage?.src || currentSeed.image,
       }
     })
     seedIdeas.filter((idea) => !savedIds.has(idea.id)).forEach((idea) => ideas.push(idea))
-    return { ...clean, ...saved, version: DATA_VERSION, ideas, bookmarks: saved.bookmarks?.length ? saved.bookmarks : seedBookmarks }
+    const hadSavedBookmarks = Array.isArray(saved.bookmarks)
+    const bookmarks = (hadSavedBookmarks ? saved.bookmarks : seedBookmarks).map((bookmark) => (
+      seedBookmarkById.has(bookmark.id) ? { ...bookmark, ...seedBookmarkById.get(bookmark.id) } : bookmark
+    ))
+    if ((saved.version || 0) < 4) {
+      const savedBookmarkIds = new Set(bookmarks.map((bookmark) => bookmark.id))
+      V4_BOOKMARK_ADDITIONS
+        .filter((id) => !savedBookmarkIds.has(id) && seedBookmarkById.has(id))
+        .forEach((id) => bookmarks.push(seedBookmarkById.get(id)))
+    }
+    return { ...clean, ...saved, version: DATA_VERSION, ideas, bookmarks }
   } catch {
     return clean
   }

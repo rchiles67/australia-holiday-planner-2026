@@ -30,7 +30,7 @@ export const seedIdeas = [
   {
     id: 'margaret-river', name: 'Margaret River & the Capes', region: 'South West WA',
     summary: 'Busselton, Yallingup, caves, coast, wine and food.', days: 5, status: 'included', color: 'ochre',
-    image: asset('boranup-forest.jpg'), coordinates: [115.073, -33.953], mapLabel: 'Margaret River',
+    image: asset('margaret-river.jpg'), coverImageId: 'margaret-coast', coordinates: [115.073, -33.953], mapLabel: 'Margaret River',
     highlights: ['Cape Naturaliste coast', 'Margaret River food and wine', 'Caves and spring wildflowers'],
     note: 'Five days is comfortable without trying to tick off every beach and winery.',
     tradeoffs: 'A single base is easy; two bases reduce backtracking but add a packing day.',
@@ -44,7 +44,7 @@ export const seedIdeas = [
   {
     id: 'southern-forests', name: 'Southern Forests & Albany', region: 'South West WA',
     summary: 'Karri forest, Pemberton, Denmark and the Great Southern coast.', days: 4, status: 'included', color: 'ochre',
-    image: asset('albany-coast.jpg'), coordinates: [117.8839, -35.0248], mapLabel: 'Albany',
+    image: asset('boranup-forest.jpg'), coverImageId: 'southern-karri', coordinates: [117.8839, -35.0248], mapLabel: 'Albany',
     highlights: ['Giant karri forest', 'Greens Pool and Elephant Rocks', 'Albany’s rugged coast'],
     note: 'This makes the South West feel like a journey rather than a Margaret River out-and-back.',
     tradeoffs: 'The one-way shape is rewarding, but car-return costs and the long Albany–Perth leg need checking.',
@@ -69,7 +69,7 @@ export const seedIdeas = [
   {
     id: 'tas-hobart', name: 'Hobart & Tasman Peninsula', region: 'Tasmania',
     summary: 'Salamanca, kunanyi and the peninsula’s sea cliffs.', days: 3, status: 'included', color: 'violet',
-    image: asset('tas-hobart-salamanca.jpg'), coordinates: [147.3272, -42.8821], mapLabel: 'Hobart',
+    image: asset('hobart-panorama.jpg'), coverImageId: 'url-1784973561723', coordinates: [147.3272, -42.8821], mapLabel: 'Hobart',
     highlights: ['Battery Point & Salamanca', 'kunanyi / Mount Wellington', 'Tasman Arch, Remarkable Cave and Tessellated Pavement'],
     timestamps: ['00:01:43', '00:02:20', '00:03:45', '00:36:46', '00:38:44'],
     note: 'Source notes suggest a compact city stay plus a full Tasman Peninsula day.',
@@ -79,12 +79,13 @@ export const seedIdeas = [
     gallery: [
       galleryImage('hobart-salamanca', 'tas-hobart-salamanca.jpg', 'Salamanca Place with kunanyi / Mount Wellington behind', 'Cheng Fei', 'CC BY-SA 2.0', 'https://commons.wikimedia.org/wiki/File:Hobart_Tasmania_Salamanca_Place.jpg'),
       galleryImage('cape-huay', 'tasman-cliffs.jpg', 'Sea cliffs at Cape Huay, Tasman National Park', 'Mooonrise', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:The_spectacular_sea_cliffs_of_Cape_Huay,_Tasman_National_Park,_Tasmania.jpg'),
+      galleryImage('url-1784973561723', 'hobart-panorama.jpg', 'Hobart view from Mount Wellington', 'JJ Harrison', 'CC BY-SA 3.0', 'https://commons.wikimedia.org/wiki/File:Hobart_from_Mount_Wellington_Panorama_1.jpg'),
     ],
   },
   {
     id: 'tas-east', name: 'Freycinet & Bay of Fires', region: 'Tasmania',
     summary: 'Wineglass Bay, Bicheno and orange-boulder beaches.', days: 4, status: 'included', color: 'violet',
-    image: asset('wineglass-bay.jpg'), coordinates: [148.287, -42.123], mapLabel: 'Freycinet',
+    image: asset('bay-of-fires.jpg'), coverImageId: 'bay-fires', coordinates: [148.287, -42.123], mapLabel: 'Freycinet',
     highlights: ['Wineglass Bay Lookout', 'Honeymoon Bay and Bicheno', 'Skeleton Bay, Cozy Corner and The Gardens'],
     timestamps: ['00:05:30', '00:07:31', '00:10:04', '00:11:02', '00:13:36'],
     note: 'A scenic, relatively easy-flowing section of the anti-clockwise circuit.',
@@ -176,6 +177,7 @@ export const seedBookmarks = [
   { id: 'photo-boranup', label: 'Photo: Boranup Forest — Paulkyranc, CC BY-SA 4.0', href: 'https://commons.wikimedia.org/wiki/File:Karri_trees_-_Boranup_Forest_01.jpg', category: 'Photo credit', scope: 'South West WA', ideaIds: ['margaret-river', 'southern-forests'], note: '', pinned: false },
   { id: 'photo-margaret', label: 'Photo: Margaret River coast — Wikimedia Commons', href: 'https://commons.wikimedia.org/wiki/File:2016_Margaret_River_Australia_-_indian_ocean.jpg', category: 'Photo credit', scope: 'Margaret River', ideaIds: ['margaret-river'], note: '', pinned: false },
   { id: 'photo-hobart', label: 'Photo: Salamanca Place — Cheng Fei, CC BY-SA 2.0', href: 'https://commons.wikimedia.org/wiki/File:Hobart_Tasmania_Salamanca_Place.jpg', category: 'Photo credit', scope: 'Hobart', ideaIds: ['tas-hobart'], note: '', pinned: false },
+  { id: 'photo-hobart-panorama', label: 'Photo: Hobart from Mount Wellington — JJ Harrison, CC BY-SA 3.0', href: 'https://commons.wikimedia.org/wiki/File:Hobart_from_Mount_Wellington_Panorama_1.jpg', category: 'Photo credit', scope: 'Hobart', ideaIds: ['tas-hobart'], note: '', pinned: false },
   { id: 'photo-wineglass', label: 'Photo: Wineglass Bay — JJ Harrison, CC BY-SA 3.0', href: 'https://commons.wikimedia.org/wiki/File:Wineglass_Bay_from_Lookout.jpg', category: 'Photo credit', scope: 'Freycinet', ideaIds: ['tas-east'], note: '', pinned: false },
   { id: 'photo-bay-fires', label: 'Photo: Bay of Fires — Diego Delso, CC BY-SA 3.0', href: 'https://commons.wikimedia.org/wiki/File:Bay_of_Fires-02.jpg', category: 'Photo credit', scope: 'East Tasmania', ideaIds: ['tas-east'], note: '', pinned: false },
   { id: 'photo-cradle', label: 'Photo: Cradle Mountain — Thennicke, CC BY-SA 4.0', href: 'https://commons.wikimedia.org/wiki/File:Boat_shed_and_Cradle_Mountain_at_Dove_Lake,_Tas.jpg', category: 'Photo credit', scope: 'Cradle Mountain', ideaIds: ['tas-highlands'], note: '', pinned: false },

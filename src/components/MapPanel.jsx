@@ -48,6 +48,11 @@ function linePath(ideas, pathGenerator) {
   return pathGenerator({ type: 'LineString', coordinates: ideas.map((idea) => idea.coordinates) })
 }
 
+function returnPath(ideas, pathGenerator) {
+  if (ideas.length < 2) return null
+  return pathGenerator({ type: 'LineString', coordinates: [ideas[ideas.length - 1].coordinates, ideas[0].coordinates] })
+}
+
 function MapMarker({ idea, projection, selected, showLabel, onSelect }) {
   const point = projection(idea.coordinates)
   if (!point) return null
@@ -133,7 +138,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
     const displayedIdeas = activeGroup?.ideas || included
     const roadGroups = activeGroup ? [activeGroup] : groups
     const flights = activeGroup ? [] : groups.slice(1).map((group, index) => {
-      const from = groups[index].ideas[groups[index].ideas.length - 1].coordinates
+      const from = groups[index].ideas[0].coordinates
       const to = group.ideas[0].coordinates
       return {
         path: pathGenerator({ type: 'LineString', coordinates: [from, to] }),
@@ -179,8 +184,9 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
           <path className="map-graticule" d={mapRoutes.graticulePath} /><path className="map-land" d={mapRoutes.landPath} />
           {mapRoutes.roadGroups.map((group) => {
             const path = linePath(group.ideas, mapRoutes.pathGenerator)
+            const airportReturn = returnPath(group.ideas, mapRoutes.pathGenerator)
             const roadClass = group.key === 'tasmania' ? 'tas-road' : group.key === 'sa' ? 'sa-road' : 'wa-road'
-            return path ? <path key={group.id} className={`road-line ${roadClass}`} d={path} /> : null
+            return path ? <g key={group.id}><path className={`road-line ${roadClass}`} d={path} /><path className="return-line" d={airportReturn} /></g> : null
           })}
           {mapRoutes.flights.map((flight, index) => <g key={`${flight.path}-${index}`}><path className="flight-arc" d={flight.path} /><Plane className="map-plane" x={flight.planePoint[0] - 6} y={flight.planePoint[1] - 6} width="12" height="12" strokeWidth="1.8" /></g>)}
           {mapRoutes.displayedIdeas.map((idea) => <MapMarker key={idea.id} idea={idea} projection={mapRoutes.projection} selected={selectedIdea?.id === idea.id} showLabel={Boolean(mapRoutes.activeGroup)} onSelect={onSelect} />)}
@@ -188,7 +194,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
           {!mapRoutes.activeGroup && selectedIdea?.id !== 'perth' && <text x={perthPoint[0] + 7} y={perthPoint[1] - 7} className="place-label">Perth</text>}
           {!mapRoutes.activeGroup && selectedIdea?.id !== 'tas-hobart' && <text x={hobartPoint[0] - 7} y={hobartPoint[1] + 13} textAnchor="end" className="place-label">Hobart</text>}
         </svg>
-        <div className="map-legend"><span><i className="legend-line road" /> Road route</span><span><i className="legend-line air" /> Flight</span></div>
+        <div className="map-legend"><span><i className="legend-line road" /> Road route</span><span><i className="legend-line return" /> Return</span><span><i className="legend-line air" /> Flight</span></div>
         <a className="map-attribution" href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/" target="_blank" rel="noreferrer">Natural Earth · public domain</a>
       </div>
       <section className="flight-panel">

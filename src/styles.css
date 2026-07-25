@@ -608,6 +608,7 @@ h2, h3, p { margin-top: 0; }
 .road-line.wa-road { stroke: var(--ochre); }
 .road-line.tas-road { stroke: var(--violet); }
 .road-line.sa-road { stroke: var(--coral); }
+.return-line { fill: none; stroke: #929f9c; stroke-width: 1.6; stroke-dasharray: 3 3; stroke-linecap: round; }
 .flight-arc { fill: none; stroke: #56726b; stroke-width: 1.35; stroke-dasharray: 5 4; stroke-linecap: round; }
 .map-plane { color: #315f55; fill: #eaf4f5; }
 .map-label { fill: #7c8d88; font: 10px Georgia, serif; letter-spacing: 2.6px; }
@@ -624,6 +625,7 @@ h2, h3, p { margin-top: 0; }
 .map-legend { position: absolute; left: 12px; bottom: 10px; padding: 7px 9px; border: 1px solid rgba(195,211,207,.88); border-radius: 7px; background: rgba(255,255,255,.9); display: flex; gap: 11px; font-size: 8px; color: #60756f; }
 .legend-line { width: 14px; display: inline-block; margin: 0 4px 2px 0; vertical-align: middle; border-top: 2px solid; }
 .legend-line.road { border-color: var(--ochre); }
+.legend-line.return { border-color: #929f9c; border-top-style: dashed; }
 .legend-line.air { border-color: #56726b; border-top-style: dashed; }
 .map-attribution { position: absolute; right: 11px; top: 10px; color: #6f827d; font-size: 7px; text-decoration: none; }
 .map-attribution:hover { color: #335f55; text-decoration: underline; }
