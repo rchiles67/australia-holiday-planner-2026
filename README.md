@@ -1,0 +1,38 @@
+# Australia holiday planner — late October / November 2026
+
+A flexible, visual planner for a 3–4 week Australia trip, currently centred on South West Western Australia and Tasmania. The live site is designed to be shared as a permanent read-only starting plan while each visitor’s experiments save in their own browser.
+
+## How sharing works
+
+- The GitHub Pages site always shows the latest plan published from `main`.
+- Edits made in the browser save locally on that device; they do not silently change the public plan.
+- **Export** downloads the full local plan as JSON for backup or for sending changes to Codex.
+- To publish agreed changes for both travellers, update the source data, commit and push. GitHub Actions redeploys the site automatically.
+
+This deliberately avoids accounts, a database and accidental overwrites. Do not put booking references, passport details or other private information in the public repository.
+
+## Features
+
+- Accurate Natural Earth 1:10m Australia boundary and true-coordinate route markers.
+- Route ordering with drag handles and draggable duration edges.
+- Editable start and end dates.
+- Destination detail workspaces with galleries, route judgement, trade-offs, seasonal notes and source links.
+- Upload, clipboard-paste and URL-based gallery additions saved locally.
+- Reorderable, pinnable and removable sources/live checks, with location links repeated in the relevant destination.
+- London–Australia and domestic flight search links.
+- Responsive phone layout; no PowerShell commands are needed to view the published site.
+
+## Local development
+
+```powershell
+npm install
+npm run dev
+```
+
+Create a production build with `npm run build`.
+
+## Data and image licensing
+
+The map boundary is Natural Earth public-domain data. Travel photographs are sourced from Wikimedia Commons and retain their individual licences and attributions. Full credits are in [PHOTO_CREDITS.md](PHOTO_CREDITS.md) and are also visible beside each photograph in the planner.
+
+The application code and the third-party media are separate works; no blanket licence is asserted over the photographs.

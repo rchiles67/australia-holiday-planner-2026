@@ -1,0 +1,21 @@
+# Photo and map credits
+
+All bundled travel photographs were selected from Wikimedia Commons with a licence or public-domain statement on the linked source page. Attribution also appears in each in-app gallery.
+
+| File in this project | Subject | Creator | Licence | Source |
+|---|---|---|---|---|
+| `perth.jpg` | Perth skyline | Robert Young | CC BY 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Perth_skyline.jpg) |
+| `boranup-forest.jpg` | Boranup karri forest | Paulkyranc | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Karri_trees_-_Boranup_Forest_01.jpg) |
+| `margaret-river.jpg` | Margaret River coast | Commons contributor | See source page | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:2016_Margaret_River_Australia_-_indian_ocean.jpg) |
+| `albany-coast.jpg` | Coast near Albany | CSIRO | CC BY 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:CSIRO_ScienceImage_2482_Coast_near_Albany_Western_Australia.jpg) |
+| `lucky-bay.jpg` | Lucky Bay | DaHuzyBru | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Lucky_Bay,_Cape_Le_Grand_National_Park,_January_2025_01.jpg) |
+| `tas-hobart-salamanca.jpg` | Salamanca Place and kunanyi | Cheng Fei | CC BY-SA 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hobart_Tasmania_Salamanca_Place.jpg) |
+| `tasman-cliffs.jpg` | Cape Huay sea cliffs | Mooonrise | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:The_spectacular_sea_cliffs_of_Cape_Huay,_Tasman_National_Park,_Tasmania.jpg) |
+| `wineglass-bay.jpg` | Wineglass Bay | JJ Harrison | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Wineglass_Bay_from_Lookout.jpg) |
+| `bay-of-fires.jpg` | Bay of Fires | Diego Delso | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Bay_of_Fires-02.jpg) |
+| `cradle-boatshed.jpg` | Cradle Mountain and Dove Lake | Thennicke | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Boat_shed_and_Cradle_Mountain_at_Dove_Lake,_Tas.jpg) |
+| `cradle-mountain.jpg` | Cradle Mountain over Dove Lake | BennyG3255 | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cradle_Mountain_over_Dove_Lake,_Tasmania.jpg) |
+| `strahan.jpg` | Strahan | Timox14 | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Strahan,_Tasmania.jpg) |
+| `stanley-nut.jpg` | Stanley and The Nut | Taspictures | CC0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:StanleyAndNut.jpg) |
+
+Map coastline and national boundary: [Natural Earth 1:10m Admin 0 Countries](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/), public domain.
