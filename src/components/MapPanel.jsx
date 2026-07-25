@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { geoGraticule, geoInterpolate, geoMercator, geoPath } from 'd3-geo'
 import { ArrowDown, ArrowUp, Car, Check, ExternalLink, Pin, Plane, Plus, Route, Trash2 } from 'lucide-react'
 import { flightNotes } from '../data.js'
@@ -8,29 +8,56 @@ const MAP_WIDTH = 360
 const MAP_HEIGHT = 280
 const PERTH = [115.8605, -31.9505]
 const HOBART = [147.3272, -42.8821]
-const projection = geoMercator().fitExtent([[18, 12], [MAP_WIDTH - 18, MAP_HEIGHT - 16]], australiaBoundary)
-const pathGenerator = geoPath(projection).digits(2)
-const landPath = pathGenerator(australiaBoundary)
-const graticulePath = pathGenerator(geoGraticule().extent([[112, -45], [154, -9]]).step([10, 10])())
-const perthPoint = projection(PERTH)
-const hobartPoint = projection(HOBART)
-const australiaLabelPoint = projection([134.2, -25.7])
+const overviewProjection = geoMercator().fitExtent([[18, 12], [MAP_WIDTH - 18, MAP_HEIGHT - 16]], australiaBoundary)
 
-function linePath(ideas) {
+function routeGroup(idea) {
+  if (idea.region === 'Tasmania') return { key: 'tasmania', label: 'Tasmania' }
+  if (idea.region.includes('Western Australia') || idea.region === 'South West WA') return { key: 'wa', label: 'WA road' }
+  if (idea.region === 'South Australia') return { key: 'sa', label: 'South Australia' }
+  return { key: idea.region.toLowerCase().replace(/[^a-z0-9]+/g, '-'), label: idea.region }
+}
+
+function projectionForIdeas(ideas) {
+  const coordinates = ideas.map((idea) => idea.coordinates)
+  const longitudes = coordinates.map(([longitude]) => longitude)
+  const latitudes = coordinates.map(([, latitude]) => latitude)
+  const minimumLongitude = Math.min(...longitudes)
+  const maximumLongitude = Math.max(...longitudes)
+  const minimumLatitude = Math.min(...latitudes)
+  const maximumLatitude = Math.max(...latitudes)
+  const longitudePadding = Math.max(1.1, (maximumLongitude - minimumLongitude) * 0.24)
+  const latitudePadding = Math.max(0.9, (maximumLatitude - minimumLatitude) * 0.28)
+  const bounds = {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [minimumLongitude - longitudePadding, minimumLatitude - latitudePadding],
+        [minimumLongitude - longitudePadding, maximumLatitude + latitudePadding],
+        [maximumLongitude + longitudePadding, maximumLatitude + latitudePadding],
+        [maximumLongitude + longitudePadding, minimumLatitude - latitudePadding],
+        [minimumLongitude - longitudePadding, minimumLatitude - latitudePadding],
+      ]],
+    },
+  }
+  return geoMercator().fitExtent([[20, 14], [MAP_WIDTH - 20, MAP_HEIGHT - 16]], bounds)
+}
+
+function linePath(ideas, pathGenerator) {
   if (ideas.length < 2) return null
   return pathGenerator({ type: 'LineString', coordinates: ideas.map((idea) => idea.coordinates) })
 }
 
-function MapMarker({ idea, selected, onSelect }) {
+function MapMarker({ idea, projection, selected, showLabel, onSelect }) {
   const point = projection(idea.coordinates)
   if (!point) return null
-  const labelToLeft = idea.coordinates[0] > 146 || idea.id === 'southern-forests'
+  const labelToLeft = point[0] > MAP_WIDTH * 0.68
   return (
     <g className={selected ? 'active-marker' : ''} role="button" tabIndex="0" aria-label={`Open ${idea.name}`} onClick={() => onSelect(idea.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(idea.id) }}>
       <title>{idea.name}</title>
       <circle className={`map-marker ${idea.color}`} cx={point[0]} cy={point[1]} r="3.2" />
       <circle className="map-marker-hit" cx={point[0]} cy={point[1]} r="9" />
-      {selected && <text className="selected-map-label" x={labelToLeft ? point[0] - 7 : point[0] + 7} y={point[1] - 7} textAnchor={labelToLeft ? 'end' : 'start'}>{idea.mapLabel || idea.name}</text>}
+      {(selected || showLabel) && <text className="selected-map-label" x={labelToLeft ? point[0] - 7 : point[0] + 7} y={point[1] - 7} textAnchor={labelToLeft ? 'end' : 'start'}>{idea.mapLabel || idea.name}</text>}
     </g>
   )
 }
@@ -82,35 +109,84 @@ function SourcesEditor({ sources, ideas, onAdd, onDelete, onMove, onChecked, onT
 }
 
 export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAddSource, onDeleteSource, onMoveSource, onCheckedSource, onTogglePin }) {
+  const [mapTab, setMapTab] = useState('overview')
   const mapRoutes = useMemo(() => {
     const included = ideas.filter((idea) => idea.status === 'included' && idea.coordinates)
-    const westernAustralia = included.filter((idea) => idea.region.includes('Western Australia') || idea.region === 'South West WA')
-    const tasmania = included.filter((idea) => idea.region === 'Tasmania')
-    const southAustralia = included.filter((idea) => idea.region === 'South Australia')
-    let airRoute = null
-    let planePoint = null
-    if (westernAustralia.length && tasmania.length) {
-      airRoute = pathGenerator({ type: 'LineString', coordinates: [PERTH, HOBART] })
-      planePoint = projection(geoInterpolate(PERTH, HOBART)(0.55))
-    } else if (westernAustralia.length && southAustralia.length) {
-      airRoute = pathGenerator({ type: 'LineString', coordinates: [PERTH, southAustralia[0].coordinates] })
-      planePoint = projection(geoInterpolate(PERTH, southAustralia[0].coordinates)(0.55))
+    const groups = []
+    included.forEach((idea) => {
+      const category = routeGroup(idea)
+      const previous = groups[groups.length - 1]
+      if (previous?.key === category.key) {
+        previous.ideas.push(idea)
+      } else {
+        groups.push({ ...category, id: `${category.key}-${groups.length}`, ideas: [idea] })
+      }
+    })
+    const repeated = new Map()
+    groups.forEach((group) => repeated.set(group.key, (repeated.get(group.key) || 0) + 1))
+    groups.forEach((group, index) => {
+      if (repeated.get(group.key) > 1) group.label = `${group.label} ${index + 1}`
+    })
+    const activeGroup = groups.find((group) => group.id === mapTab)
+    const projection = activeGroup ? projectionForIdeas(activeGroup.ideas) : overviewProjection
+    const pathGenerator = geoPath(projection).digits(2)
+    const displayedIdeas = activeGroup?.ideas || included
+    const roadGroups = activeGroup ? [activeGroup] : groups
+    const flights = activeGroup ? [] : groups.slice(1).map((group, index) => {
+      const from = groups[index].ideas[groups[index].ideas.length - 1].coordinates
+      const to = group.ideas[0].coordinates
+      return {
+        path: pathGenerator({ type: 'LineString', coordinates: [from, to] }),
+        planePoint: projection(geoInterpolate(from, to)(0.52)),
+      }
+    })
+    let graticuleExtent = [[112, -45], [154, -9]]
+    if (activeGroup) {
+      const longitudes = activeGroup.ideas.map((idea) => idea.coordinates[0])
+      const latitudes = activeGroup.ideas.map((idea) => idea.coordinates[1])
+      graticuleExtent = [[Math.min(...longitudes) - 3, Math.min(...latitudes) - 3], [Math.max(...longitudes) + 3, Math.max(...latitudes) + 3]]
     }
-    return { included, waRoad: linePath(westernAustralia), tasRoad: linePath(tasmania), airRoute, planePoint }
-  }, [ideas])
+    return {
+      activeGroup,
+      displayedIdeas,
+      flights,
+      groups,
+      graticulePath: pathGenerator(geoGraticule().extent(graticuleExtent).step(activeGroup ? [5, 5] : [10, 10])()),
+      landPath: pathGenerator(australiaBoundary),
+      pathGenerator,
+      projection,
+      roadGroups,
+    }
+  }, [ideas, mapTab])
+
+  useEffect(() => {
+    if (mapTab !== 'overview' && !mapRoutes.groups.some((group) => group.id === mapTab)) setMapTab('overview')
+  }, [mapRoutes.groups, mapTab])
+
+  const perthPoint = mapRoutes.projection(PERTH)
+  const hobartPoint = mapRoutes.projection(HOBART)
+  const australiaLabelPoint = mapRoutes.projection([134.2, -25.7])
 
   return (
     <aside className="map-panel">
-      <div className="map-heading"><div><h2>Route map</h2><p>Natural Earth 1:10m boundary · true coordinates</p></div><Route size={20} /></div>
+      <div className="map-heading"><div><h2>Route map</h2><p>{mapRoutes.activeGroup ? `${mapRoutes.activeGroup.label} · fitted to this road section` : 'Natural Earth 1:10m boundary · true coordinates'}</p></div><Route size={20} /></div>
+      <div className="map-tabs" role="tablist" aria-label="Route map views">
+        <button type="button" role="tab" aria-selected={mapTab === 'overview'} className={mapTab === 'overview' ? 'active' : ''} onClick={() => setMapTab('overview')}>Overview</button>
+        {mapRoutes.groups.map((group) => <button key={group.id} type="button" role="tab" aria-selected={mapTab === group.id} className={mapTab === group.id ? 'active' : ''} onClick={() => setMapTab(group.id)}>{group.label}</button>)}
+      </div>
       <div className="map-canvas">
-        <svg viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} role="img" aria-label="Accurate map of Australia with included route markers">
-          <path className="map-graticule" d={graticulePath} /><path className="map-land" d={landPath} />
-          {mapRoutes.waRoad && <path className="road-line wa-road" d={mapRoutes.waRoad} />}{mapRoutes.tasRoad && <path className="road-line tas-road" d={mapRoutes.tasRoad} />}{mapRoutes.airRoute && <path className="flight-arc" d={mapRoutes.airRoute} />}
-          {mapRoutes.planePoint && <Plane className="map-plane" x={mapRoutes.planePoint[0] - 6} y={mapRoutes.planePoint[1] - 6} width="12" height="12" strokeWidth="1.8" />}
-          {mapRoutes.included.map((idea) => <MapMarker key={idea.id} idea={idea} selected={selectedIdea?.id === idea.id} onSelect={onSelect} />)}
-          <text x={australiaLabelPoint[0]} y={australiaLabelPoint[1]} className="map-label">AUSTRALIA</text>
-          {selectedIdea?.id !== 'perth' && <text x={perthPoint[0] + 7} y={perthPoint[1] - 7} className="place-label">Perth</text>}
-          {selectedIdea?.id !== 'tas-hobart' && <text x={hobartPoint[0] - 7} y={hobartPoint[1] + 13} textAnchor="end" className="place-label">Hobart</text>}
+        <svg viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} role="img" aria-label={mapRoutes.activeGroup ? `Accurate zoomed map of ${mapRoutes.activeGroup.label}` : 'Accurate overview map of Australia with included route markers'}>
+          <path className="map-graticule" d={mapRoutes.graticulePath} /><path className="map-land" d={mapRoutes.landPath} />
+          {mapRoutes.roadGroups.map((group) => {
+            const path = linePath(group.ideas, mapRoutes.pathGenerator)
+            const roadClass = group.key === 'tasmania' ? 'tas-road' : group.key === 'sa' ? 'sa-road' : 'wa-road'
+            return path ? <path key={group.id} className={`road-line ${roadClass}`} d={path} /> : null
+          })}
+          {mapRoutes.flights.map((flight, index) => <g key={`${flight.path}-${index}`}><path className="flight-arc" d={flight.path} /><Plane className="map-plane" x={flight.planePoint[0] - 6} y={flight.planePoint[1] - 6} width="12" height="12" strokeWidth="1.8" /></g>)}
+          {mapRoutes.displayedIdeas.map((idea) => <MapMarker key={idea.id} idea={idea} projection={mapRoutes.projection} selected={selectedIdea?.id === idea.id} showLabel={Boolean(mapRoutes.activeGroup)} onSelect={onSelect} />)}
+          {!mapRoutes.activeGroup && <text x={australiaLabelPoint[0]} y={australiaLabelPoint[1]} className="map-label">AUSTRALIA</text>}
+          {!mapRoutes.activeGroup && selectedIdea?.id !== 'perth' && <text x={perthPoint[0] + 7} y={perthPoint[1] - 7} className="place-label">Perth</text>}
+          {!mapRoutes.activeGroup && selectedIdea?.id !== 'tas-hobart' && <text x={hobartPoint[0] - 7} y={hobartPoint[1] + 13} textAnchor="end" className="place-label">Hobart</text>}
         </svg>
         <div className="map-legend"><span><i className="legend-line road" /> Road route</span><span><i className="legend-line air" /> Flight</span></div>
         <a className="map-attribution" href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/" target="_blank" rel="noreferrer">Natural Earth · public domain</a>

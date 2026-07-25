@@ -60,6 +60,7 @@ export default function App() {
   const [activeView, setActiveView] = useState('route')
   const [scenarioId, setScenarioId] = useState('wa-tas')
   const [modalOpen, setModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState(null)
   const [savePulse, setSavePulse] = useState(false)
   const [saveError, setSaveError] = useState(false)
 
@@ -124,6 +125,53 @@ export default function App() {
     setSelectedId(idea.id)
     setActiveView('ideas')
     setModalOpen(false)
+    setEditingId(null)
+  }
+
+  function openAddIdea() {
+    setEditingId(null)
+    setModalOpen(true)
+  }
+
+  function openEditIdea(id) {
+    setEditingId(id)
+    setSelectedId(id)
+    setActiveView('ideas')
+    setModalOpen(true)
+  }
+
+  function saveIdea(form) {
+    if (!editingId) {
+      createIdea(form)
+      return
+    }
+    setIdeas((current) => current.map((idea) => idea.id === editingId ? {
+      ...idea,
+      name: form.name.trim(),
+      region: form.region.trim() || 'Other idea',
+      days: Math.max(1, Math.min(14, form.days)),
+      summary: form.summary.trim() || 'Possibility to explore.',
+      note: form.note.trim(),
+    } : idea))
+    setModalOpen(false)
+    setEditingId(null)
+  }
+
+  function deleteIdea(id) {
+    const idea = ideas.find((item) => item.id === id)
+    if (!idea) return
+    if (ideas.length === 1) {
+      window.alert('Keep at least one idea in the planner.')
+      return
+    }
+    if (!window.confirm(`Permanently delete “${idea.name}”? This is different from Exclude.`)) return
+    const index = ideas.findIndex((item) => item.id === id)
+    const remaining = ideas.filter((item) => item.id !== id)
+    setIdeas(remaining)
+    setBookmarks((current) => current.map((source) => ({ ...source, ideaIds: (source.ideaIds || []).filter((ideaId) => ideaId !== id) })))
+    if (selectedId === id) setSelectedId(remaining[Math.min(index, remaining.length - 1)].id)
+    setModalOpen(false)
+    setEditingId(null)
   }
 
   function applyScenario(scenario) {
@@ -228,16 +276,16 @@ export default function App() {
       </header>
 
       <main className={`workspace view-${activeView}`}>
-        <IdeaPanel ideas={ideas} selectedId={selectedId} onSelect={(id) => selectIdea(id, true)} onStatus={updateStatus} onDays={updateDays} onAdd={() => setModalOpen(true)} onReorder={setIdeas} />
+        <IdeaPanel ideas={ideas} selectedId={selectedId} onSelect={(id) => selectIdea(id, true)} onStatus={updateStatus} onDays={updateDays} onAdd={openAddIdea} onReorder={setIdeas} onEdit={openEditIdea} onDelete={deleteIdea} />
         <div className="planning-column">
-          {activeView === 'ideas' && <IdeaDetail idea={selectedIdea} sources={bookmarks} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} />}
-          {activeView === 'route' && <><Timeline ideas={ideas} tripLength={tripLength} startDate={dateFromInput(startDate)} onReorder={reorder} onSelect={(id) => selectIdea(id, false)} onAdd={() => setModalOpen(true)} onSetDays={setDays} /><ComparePanel scenarios={scenarios} activeId={scenarioId} onPreview={setScenarioId} onApply={applyScenario} /></>}
+          {activeView === 'ideas' && <IdeaDetail idea={selectedIdea} sources={bookmarks} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} onEdit={openEditIdea} onDelete={deleteIdea} />}
+          {activeView === 'route' && <Timeline ideas={ideas} tripLength={tripLength} startDate={dateFromInput(startDate)} onReorder={reorder} onSelect={(id) => selectIdea(id, false)} onAdd={openAddIdea} onSetDays={setDays} />}
           {activeView === 'compare' && <ComparePanel scenarios={scenarios} activeId={scenarioId} onPreview={setScenarioId} onApply={applyScenario} />}
         </div>
         <MapPanel ideas={ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
       </main>
-      <div className="mobile-status"><span><Save size={14} /> {includedCount} included · {tripLength} days</span><button type="button" onClick={() => setModalOpen(true)}><Plus size={15} /> Add idea</button></div>
-      {modalOpen && <AddIdeaModal onClose={() => setModalOpen(false)} onCreate={createIdea} />}
+      <div className="mobile-status"><span><Save size={14} /> {includedCount} included · {tripLength} days</span><button type="button" onClick={openAddIdea}><Plus size={15} /> Add idea</button></div>
+      {modalOpen && <AddIdeaModal idea={ideas.find((idea) => idea.id === editingId)} onClose={() => { setModalOpen(false); setEditingId(null) }} onSave={saveIdea} />}
     </div>
   )
 }

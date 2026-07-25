@@ -14,8 +14,10 @@ This deliberately avoids accounts, a database and accidental overwrites. Do not 
 ## Features
 
 - Accurate Natural Earth 1:10m Australia boundary and true-coordinate route markers.
+- Overview and fitted road-section map tabs for each contiguous group between flights.
 - Route ordering with drag handles and draggable duration edges.
 - Editable start and end dates.
+- Visible edit and permanent-delete controls for every destination idea.
 - Destination detail workspaces with galleries, route judgement, trade-offs, seasonal notes and source links.
 - Upload, clipboard-paste and URL-based gallery additions saved locally.
 - Reorderable, pinnable and removable sources/live checks, with location links repeated in the relevant destination.

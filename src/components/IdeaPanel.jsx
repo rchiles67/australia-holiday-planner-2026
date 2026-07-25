@@ -1,7 +1,7 @@
 import { DndContext, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Check, CircleHelp, GripVertical, Minus, Plus, X } from 'lucide-react'
+import { Check, CircleHelp, GripVertical, Minus, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { statusLabels } from '../data.js'
 
 const statusIcons = { included: Check, maybe: CircleHelp, excluded: X }
@@ -15,7 +15,7 @@ function StatusButton({ value, active, onClick }) {
   )
 }
 
-function SortableIdea({ idea, selected, onSelect, onStatus, onDays }) {
+function SortableIdea({ idea, selected, onSelect, onStatus, onDays, onEdit, onDelete }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: idea.id })
   const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 4 : undefined }
   return (
@@ -37,11 +37,15 @@ function SortableIdea({ idea, selected, onSelect, onStatus, onDays }) {
         <output>{idea.days}</output>
         <button type="button" onClick={() => onDays(idea.id, 1)} aria-label={`Add a day to ${idea.name}`}><Plus size={13} /></button>
       </div>
+      <div className="idea-card-actions">
+        <button type="button" onClick={() => onEdit(idea.id)}><Pencil size={12} /> Edit</button>
+        <button type="button" className="danger" onClick={() => onDelete(idea.id)}><Trash2 size={12} /> Delete</button>
+      </div>
     </article>
   )
 }
 
-export default function IdeaPanel({ ideas, selectedId, onSelect, onStatus, onDays, onAdd, onReorder }) {
+export default function IdeaPanel({ ideas, selectedId, onSelect, onStatus, onDays, onAdd, onReorder, onEdit, onDelete }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }))
 
   function dragEnd({ active, over }) {
@@ -57,7 +61,7 @@ export default function IdeaPanel({ ideas, selectedId, onSelect, onStatus, onDay
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
         <SortableContext items={ideas.map((idea) => idea.id)} strategy={verticalListSortingStrategy}>
           <div className="idea-list">
-            {ideas.map((idea) => <SortableIdea key={idea.id} idea={idea} selected={selectedId === idea.id} onSelect={onSelect} onStatus={onStatus} onDays={onDays} />)}
+            {ideas.map((idea) => <SortableIdea key={idea.id} idea={idea} selected={selectedId === idea.id} onSelect={onSelect} onStatus={onStatus} onDays={onDays} onEdit={onEdit} onDelete={onDelete} />)}
           </div>
         </SortableContext>
       </DndContext>

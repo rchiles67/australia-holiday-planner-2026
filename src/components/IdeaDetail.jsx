@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Clipboard, ExternalLink, ImagePlus, Link, Star, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Clipboard, ExternalLink, ImagePlus, Link, Pencil, Star, Trash2, Upload } from 'lucide-react'
 
 function readAndResizeImage(file) {
   return new Promise((resolve, reject) => {
@@ -23,7 +23,7 @@ function readAndResizeImage(file) {
   })
 }
 
-export default function IdeaDetail({ idea, sources, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover }) {
+export default function IdeaDetail({ idea, sources, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover, onEdit, onDelete }) {
   const [activeImageId, setActiveImageId] = useState(idea.gallery?.[0]?.id || null)
   const [message, setMessage] = useState('')
   const fileInput = useRef(null)
@@ -116,7 +116,11 @@ export default function IdeaDetail({ idea, sources, onUpdateField, onAddImage, o
           <h2>{idea.name}</h2>
           <p>{idea.summary}</p>
         </div>
-        <div className={`detail-status status-${idea.status}`}>{idea.status}</div>
+        <div className="idea-detail-actions">
+          <div className={`detail-status status-${idea.status}`}>{idea.status}</div>
+          <button type="button" onClick={() => onEdit(idea.id)}><Pencil size={13} /> Edit idea</button>
+          <button type="button" className="danger" onClick={() => onDelete(idea.id)}><Trash2 size={13} /> Delete</button>
+        </div>
       </header>
 
       <div className="gallery-shell">

@@ -1,13 +1,20 @@
 import { X } from 'lucide-react'
 import { useState } from 'react'
 
-export default function AddIdeaModal({ onClose, onCreate }) {
-  const [form, setForm] = useState({ name: '', region: '', days: 3, summary: '', note: '' })
+export default function AddIdeaModal({ idea, onClose, onSave }) {
+  const editing = Boolean(idea)
+  const [form, setForm] = useState({
+    name: idea?.name || '',
+    region: idea?.region || '',
+    days: idea?.days || 3,
+    summary: idea?.summary || '',
+    note: idea?.note || '',
+  })
 
   function submit(event) {
     event.preventDefault()
     if (!form.name.trim()) return
-    onCreate(form)
+    onSave(form)
   }
 
   function update(field, value) {
@@ -19,8 +26,8 @@ export default function AddIdeaModal({ onClose, onCreate }) {
       <form className="idea-modal" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
         <div className="modal-heading">
           <div>
-            <h2>Add an idea</h2>
-            <p>Capture it now; decide whether it fits later.</p>
+            <h2>{editing ? 'Edit idea' : 'Add an idea'}</h2>
+            <p>{editing ? 'Correct the card’s name, region and planning notes.' : 'Capture it now; decide whether it fits later.'}</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close"><X size={20} /></button>
         </div>
@@ -49,7 +56,7 @@ export default function AddIdeaModal({ onClose, onCreate }) {
         </label>
         <div className="modal-actions">
           <button type="button" className="secondary" onClick={onClose}>Cancel</button>
-          <button type="submit" className="primary">Add as Maybe</button>
+          <button type="submit" className="primary">{editing ? 'Save changes' : 'Add as Maybe'}</button>
         </div>
       </form>
     </div>
