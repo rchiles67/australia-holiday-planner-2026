@@ -58,9 +58,9 @@ function MapMarker({ idea, projection, selected, showLabel, onSelect }) {
   if (!point) return null
   const labelToLeft = point[0] > MAP_WIDTH * 0.68
   return (
-    <g className={selected ? 'active-marker' : ''} role="button" tabIndex="0" aria-label={`Open ${idea.name}`} onClick={() => onSelect(idea.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(idea.id) }}>
+    <g className={`${selected ? 'active-marker' : ''} ${idea.status === 'maybe' ? 'maybe-marker' : ''}`} role="button" tabIndex="0" aria-label={`Open ${idea.name}`} onClick={() => onSelect(idea.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(idea.id) }}>
       <title>{idea.name}</title>
-      <circle className={`map-marker ${idea.color}`} cx={point[0]} cy={point[1]} r="3.2" />
+      <circle className={`map-marker ${idea.color}`} cx={point[0]} cy={point[1]} r={idea.status === 'maybe' ? 2.25 : 3.65} />
       <circle className="map-marker-hit" cx={point[0]} cy={point[1]} r="9" />
       {(selected || showLabel) && <text className="selected-map-label" x={labelToLeft ? point[0] - 7 : point[0] + 7} y={point[1] - 7} textAnchor={labelToLeft ? 'end' : 'start'}>{idea.mapLabel || idea.name}</text>}
     </g>
@@ -115,10 +115,24 @@ function SourcesEditor({ sources, ideas, onAdd, onDelete, onMove, onChecked, onT
 
 export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAddSource, onDeleteSource, onMoveSource, onCheckedSource, onTogglePin }) {
   const [mapTab, setMapTab] = useState('overview')
+  const scheduledIdeas = ideas.filter((idea) => idea.status !== 'excluded')
+  const hasTasmania = scheduledIdeas.some((idea) => idea.region === 'Tasmania')
+  const hasSouthAustralia = scheduledIdeas.some((idea) => idea.region === 'South Australia')
+  const applicableFlightIds = new Set([
+    'london-perth',
+    hasTasmania ? 'perth-hobart' : null,
+    hasTasmania ? 'perth-hobart-fallback' : null,
+    hasSouthAustralia && !hasTasmania ? 'perth-adelaide' : null,
+    hasTasmania && hasSouthAustralia ? 'hobart-adelaide' : null,
+    hasTasmania && !hasSouthAustralia ? 'hobart-london' : null,
+    hasSouthAustralia ? 'adelaide-london' : null,
+    !hasTasmania && !hasSouthAustralia ? 'perth-london' : null,
+  ].filter(Boolean))
+  const applicableFlights = flightNotes.filter((flight) => applicableFlightIds.has(flight.id))
   const mapRoutes = useMemo(() => {
-    const included = ideas.filter((idea) => idea.status === 'included' && idea.coordinates)
+    const scheduled = ideas.filter((idea) => idea.status !== 'excluded' && idea.coordinates)
     const groups = []
-    included.forEach((idea) => {
+    scheduled.forEach((idea) => {
       const category = routeGroup(idea)
       const previous = groups[groups.length - 1]
       if (previous?.key === category.key) {
@@ -135,7 +149,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
     const activeGroup = groups.find((group) => group.id === mapTab)
     const projection = activeGroup ? projectionForIdeas(activeGroup.ideas) : overviewProjection
     const pathGenerator = geoPath(projection).digits(2)
-    const displayedIdeas = activeGroup?.ideas || included
+    const displayedIdeas = activeGroup?.ideas || scheduled
     const roadGroups = activeGroup ? [activeGroup] : groups
     const flights = activeGroup ? [] : groups.slice(1).map((group, index) => {
       const from = groups[index].ideas[0].coordinates
@@ -180,7 +194,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
         {mapRoutes.groups.map((group) => <button key={group.id} type="button" role="tab" aria-selected={mapTab === group.id} className={mapTab === group.id ? 'active' : ''} onClick={() => setMapTab(group.id)}>{group.label}</button>)}
       </div>
       <div className="map-canvas">
-        <svg viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} role="img" aria-label={mapRoutes.activeGroup ? `Accurate zoomed map of ${mapRoutes.activeGroup.label}` : 'Accurate overview map of Australia with included route markers'}>
+        <svg viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} role="img" aria-label={mapRoutes.activeGroup ? `Accurate zoomed map of ${mapRoutes.activeGroup.label}` : 'Accurate overview map of Australia with scheduled route markers'}>
           <path className="map-graticule" d={mapRoutes.graticulePath} /><path className="map-land" d={mapRoutes.landPath} />
           {mapRoutes.roadGroups.map((group) => {
             const path = linePath(group.ideas, mapRoutes.pathGenerator)
@@ -194,13 +208,13 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
           {!mapRoutes.activeGroup && selectedIdea?.id !== 'perth' && <text x={perthPoint[0] + 7} y={perthPoint[1] - 7} className="place-label">Perth</text>}
           {!mapRoutes.activeGroup && selectedIdea?.id !== 'tas-hobart' && <text x={hobartPoint[0] - 7} y={hobartPoint[1] + 13} textAnchor="end" className="place-label">Hobart</text>}
         </svg>
-        <div className="map-legend"><span><i className="legend-line road" /> Road route</span><span><i className="legend-line return" /> Return</span><span><i className="legend-line air" /> Flight</span></div>
+        <div className="map-legend"><span><i className="legend-dot included" /> Include</span><span><i className="legend-dot maybe" /> Maybe</span><span><i className="legend-line road" /> Road route</span><span><i className="legend-line return" /> Last drive</span><span><i className="legend-line air" /> Flight</span></div>
         <a className="map-attribution" href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/" target="_blank" rel="noreferrer">Natural Earth · public domain</a>
       </div>
       <section className="flight-panel">
         <div className="subheading"><h3>Flights & transfers</h3><Plane size={17} /></div>
-        {flightNotes.map((flight) => <article key={flight.route} className="flight-row"><div className="flight-icon"><Plane size={15} /></div><div><strong>{flight.route}</strong><span>{flight.time}</span><p>{flight.detail}</p></div><a href={flight.href} target="_blank" rel="noreferrer">{flight.label}</a></article>)}
-        <div className="car-note"><Car size={15} /> Tasmania works best as a road loop; allow slower-than-map driving.</div>
+        {applicableFlights.map((flight) => <article key={flight.id} className="flight-row"><div className="flight-icon"><Plane size={15} /></div><div><strong>{flight.route}</strong><span>{flight.time}</span><p>{flight.detail}</p></div><a href={flight.href} target="_blank" rel="noreferrer">{flight.label}</a></article>)}
+        {hasTasmania && <div className="car-note"><Car size={15} /> Tasmania works best as a road loop; allow slower-than-map driving.</div>}
       </section>
       <SourcesEditor sources={sources} ideas={ideas} onAdd={onAddSource} onDelete={onDeleteSource} onMove={onMoveSource} onChecked={onCheckedSource} onTogglePin={onTogglePin} />
     </aside>

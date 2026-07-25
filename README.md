@@ -35,6 +35,8 @@ npm run dev
 
 Then open <http://localhost:5173/> on this computer.
 
+For a fixed phone-sized preview in a second tab, open <http://localhost:5173/mobile-preview.html>. The published equivalent is <https://rchiles67.github.io/australia-holiday-planner-2026/mobile-preview.html>.
+
 Create a production build with `npm run build`.
 
 ## Data and image licensing

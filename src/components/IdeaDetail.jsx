@@ -23,7 +23,7 @@ function readAndResizeImage(file) {
   })
 }
 
-export default function IdeaDetail({ idea, sources, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover, onEdit, onDelete }) {
+export default function IdeaDetail({ idea, sources, onBack, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover, onEdit, onDelete }) {
   const [activeImageId, setActiveImageId] = useState(idea.gallery?.[0]?.id || null)
   const [message, setMessage] = useState('')
   const fileInput = useRef(null)
@@ -117,6 +117,7 @@ export default function IdeaDetail({ idea, sources, onUpdateField, onAddImage, o
           <p>{idea.summary}</p>
         </div>
         <div className="idea-detail-actions">
+          <button type="button" className="detail-back" onClick={onBack}><ArrowLeft size={13} /> Back</button>
           <div className={`detail-status status-${idea.status}`}>{idea.status}</div>
           <button type="button" onClick={() => onEdit(idea.id)}><Pencil size={13} /> Edit idea</button>
           <button type="button" className="danger" onClick={() => onDelete(idea.id)}><Trash2 size={13} /> Delete</button>

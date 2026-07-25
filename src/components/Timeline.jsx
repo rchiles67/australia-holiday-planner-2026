@@ -47,10 +47,10 @@ function SortableRouteBlock({ idea, start, tripLength, startDate, onSelect, onSe
   }
 
   return (
-    <div ref={setNodeRef} className={`route-block ${colorClass[idea.color] || 'green'} ${isDragging ? 'dragging' : ''}`} style={style}>
+    <div ref={setNodeRef} className={`route-block ${colorClass[idea.color] || 'green'} ${idea.status === 'maybe' ? 'tentative' : ''} ${isDragging ? 'dragging' : ''}`} style={style}>
       <button type="button" className="route-drag-handle" aria-label={`Drag ${idea.name} to reorder`} {...attributes} {...listeners}><GripVertical size={15} /></button>
       <button type="button" className="route-block-main" onClick={() => onSelect(idea.id)}>
-        <span><strong>{idea.name}</strong><small>{formatDate(segmentStart)}–{formatDate(segmentEnd)} · {idea.days} days</small></span><MapPin size={14} />
+        <span><strong>{idea.name}</strong><small>{formatDate(segmentStart)}–{formatDate(segmentEnd)} · {idea.days} days{idea.status === 'maybe' ? ' · Maybe' : ''}</small></span><MapPin size={14} />
       </button>
       <button type="button" className="resize-handle" onPointerDown={beginResize} aria-label={`Drag to change length of ${idea.name}`} title="Drag to change days"><span /></button>
     </div>
@@ -58,8 +58,8 @@ function SortableRouteBlock({ idea, start, tripLength, startDate, onSelect, onSe
 }
 
 export default function Timeline({ ideas, tripLength, startDate, onReorder, onSelect, onAdd, onSetDays }) {
-  const included = ideas.filter((idea) => idea.status === 'included')
-  const allocated = included.reduce((sum, idea) => sum + idea.days, 0)
+  const scheduled = ideas.filter((idea) => idea.status !== 'excluded')
+  const allocated = scheduled.reduce((sum, idea) => sum + idea.days, 0)
   const unallocated = tripLength - allocated
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }))
   let runningDay = 0
@@ -79,12 +79,12 @@ export default function Timeline({ ideas, tripLength, startDate, onReorder, onSe
       </div>
       <div className="day-ruler" aria-hidden="true" style={{ gridTemplateColumns: `repeat(${tripLength}, minmax(8px, 1fr))` }}>{Array.from({ length: tripLength }, (_, index) => <span key={index}>{index + 1}</span>)}</div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
-        <SortableContext items={included.map((idea) => idea.id)} strategy={horizontalListSortingStrategy}>
+        <SortableContext items={scheduled.map((idea) => idea.id)} strategy={horizontalListSortingStrategy}>
           <div className="route-track" style={{ backgroundSize: `${100 / tripLength}% 100%` }}>
-            {included.map((idea, index) => {
+            {scheduled.map((idea, index) => {
               const start = runningDay
               runningDay += idea.days
-              const previousRegion = index > 0 ? included[index - 1].region : ''
+              const previousRegion = index > 0 ? scheduled[index - 1].region : ''
               const isFlight = index > 0 && (previousRegion.includes('Western Australia') || previousRegion.includes('South West WA')) && idea.region === 'Tasmania'
               return (
                 <div key={idea.id} className="route-row">
@@ -97,7 +97,7 @@ export default function Timeline({ ideas, tripLength, startDate, onReorder, onSe
           </div>
         </SortableContext>
       </DndContext>
-      <footer className="timeline-tip"><span>Only ideas marked Include appear here.</span><span>{allocated} of {tripLength} days allocated</span></footer>
+      <footer className="timeline-tip"><span>Include and Maybe stay scheduled; Exclude removes an idea.</span><span>{allocated} of {tripLength} days allocated</span></footer>
     </section>
   )
 }
