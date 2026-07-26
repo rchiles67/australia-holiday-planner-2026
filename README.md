@@ -8,8 +8,8 @@ Open the published planner at <https://rchiles67.github.io/australia-holiday-pla
 
 - The GitHub Pages site always shows the latest plan published from `main`.
 - Edits made in the browser save locally on that device; they do not silently change the public plan.
-- **Export / Import** downloads the full local plan under a name you choose, or replaces this browser's plan with a validated JSON export.
-- The transfer panel links to the shared Google Drive folder. Upload remains a separate step because this static GitHub Pages site does not hold either traveller's Google credentials.
+- **Save to Drive / Open from Drive** uses a small owner-authorised Google Apps Script bridge to exchange named plans through the shared `Drift-shared` folder.
+- **Export / Import** remains available as a local JSON backup and recovery route.
 - To publish agreed changes for both travellers, update the source data, commit and push. GitHub Actions redeploys the site automatically.
 
 This deliberately avoids accounts, a database and accidental overwrites. Do not put booking references, passport details or other private information in the public repository.
@@ -29,6 +29,7 @@ This deliberately avoids accounts, a database and accidental overwrites. Do not 
 - Independent Include, Maybe, Exclude and per-card day choices for each direction.
 - Add a direction by copying the current plan, or remove a direction without deleting its idea cards.
 - Choose each direction's cover from photographs belonging to its included ideas.
+- Direct named-plan saving to, listing from and opening from the shared Google Drive folder.
 - Eight Tasmania scenery modules following the anti-clockwise order in `tasmania_holiday_ideas.md`.
 - Optional Great Ocean Road, Wilsons Promontory, Sydney coast, Blue Mountains and Royal National Park cards.
 - Responsive phone layout; no PowerShell commands are needed to view the published site.
@@ -45,6 +46,10 @@ Then open <http://localhost:5173/> on this computer.
 For a fixed phone-sized preview in a second tab, open <http://localhost:5173/mobile-preview.html>. The published equivalent is <https://rchiles67.github.io/australia-holiday-planner-2026/mobile-preview.html>.
 
 Create a production build with `npm run build`.
+
+## Google Drive bridge
+
+The bridge source and deployment notes are in [`google-apps-script/`](google-apps-script/README.md). The deployed `/exec` URL is included in the public build, so collaborators can use Drive without configuration. `VITE_DRIVE_BRIDGE_URL` can override it for a replacement deployment.
 
 ## Data and image licensing
 

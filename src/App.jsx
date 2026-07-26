@@ -576,15 +576,27 @@ export default function App() {
   }
 
   function exportPlan(fileName) {
-    const payload = { version: DATA_VERSION, title: 'Australia holiday 2026', exportedAt: new Date().toISOString(), startDate, endDate, tripLength, ideas, bookmarks, directions, appliedDirectionId }
+    const payload = currentPlanSnapshot()
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }))
     const anchor = document.createElement('a'); anchor.href = url; anchor.download = exportFileName(fileName); anchor.click(); URL.revokeObjectURL(url)
   }
 
+  function currentPlanSnapshot() {
+    return { version: DATA_VERSION, title: 'Australia holiday 2026', exportedAt: new Date().toISOString(), startDate, endDate, tripLength, ideas, bookmarks, directions, appliedDirectionId }
+  }
+
   async function importPlan(file) {
     try {
-      const imported = parseImportedPlan(JSON.parse(await file.text()))
-      if (!window.confirm(`Replace the plan saved in this browser with “${file.name}”?`)) return { message: 'Import cancelled.' }
+      return importPlanPayload(JSON.parse(await file.text()), file.name)
+    } catch (error) {
+      return { message: error instanceof Error ? error.message : 'The plan could not be imported.' }
+    }
+  }
+
+  function importPlanPayload(payload, sourceName) {
+    try {
+      const imported = parseImportedPlan(payload)
+      if (!window.confirm(`Replace the plan saved in this browser with “${sourceName}”?`)) return { message: 'Import cancelled.' }
       setIdeas(imported.ideas)
       setBookmarks(imported.bookmarks)
       setDirections(imported.directions)
@@ -596,7 +608,7 @@ export default function App() {
       setSelectedId(imported.ideas.find((idea) => idea.status === 'included')?.id || imported.ideas[0].id)
       setActiveView('compare')
       setIdeaDetailOpen(false)
-      return { message: `Imported “${file.name}”. This browser now contains that plan.` }
+      return { message: `Opened “${sourceName}”. This browser now contains that plan.` }
     } catch (error) {
       return { message: error instanceof Error ? error.message : 'The plan could not be imported.' }
     }
@@ -651,7 +663,7 @@ export default function App() {
       </main>
       <div className="mobile-status"><span><Save size={14} /> {includedCount} firm + {maybeCount} maybe · {tripLength} days</span><button type="button" onClick={openAddIdea}><Plus size={15} /> Add idea</button></div>
       {modalOpen && <AddIdeaModal idea={ideas.find((idea) => idea.id === editingId)} areas={areaOptions} initialArea={initialAddArea} onClose={() => { setModalOpen(false); setEditingId(null); setInitialAddArea('') }} onSave={saveIdea} />}
-      {transferOpen && <PlanTransferModal onClose={() => setTransferOpen(false)} onExport={exportPlan} onImport={importPlan} />}
+      {transferOpen && <PlanTransferModal onClose={() => setTransferOpen(false)} onExport={exportPlan} onImport={importPlan} onImportPayload={importPlanPayload} plan={currentPlanSnapshot()} />}
     </div>
   )
 }

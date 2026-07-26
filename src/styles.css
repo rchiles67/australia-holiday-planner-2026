@@ -1154,16 +1154,34 @@ h2, h3, p { margin-top: 0; }
 }
 
 /* Plan transfer and direction cover controls */
-.transfer-modal { width: min(560px, calc(100vw - 28px)); }
+.transfer-modal { width: min(590px, calc(100vw - 28px)); max-height: min(760px, calc(100dvh - 28px)); padding: 0; overflow-y: auto; }
+.transfer-modal .modal-heading { position: sticky; top: 0; z-index: 2; margin: 0; padding: 18px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.97); }
 .transfer-section { padding: 16px 18px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.transfer-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.transfer-section-heading > svg { flex: 0 0 auto; color: #47786b; }
 .transfer-section > div > strong { color: var(--ink); font-family: Georgia, Cambria, serif; font-size: 17px; font-weight: 500; }
 .transfer-section > div > p { margin: 4px 0 0; color: #70817d; font-size: 9px; line-height: 1.45; }
 .transfer-section label:not(.transfer-file-button) { display: grid; gap: 5px; color: #748783; font-size: 8px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
-.transfer-section input[type="text"] { height: 38px; }
+.transfer-section input[type="text"],
+.transfer-section input[type="url"],
+.transfer-section select { width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 7px; padding: 0 10px; background: white; color: var(--ink); font-size: 10px; font-weight: 500; }
 .transfer-primary,
+.transfer-secondary,
 .transfer-file-button { min-height: 38px; width: fit-content; padding: 0 13px; border: 1px solid var(--ink); border-radius: 7px; background: var(--ink); color: white; display: inline-flex; align-items: center; justify-content: center; gap: 7px; font-size: 10px; font-weight: 750; cursor: pointer; }
+.transfer-secondary { border-color: #9fb4ae; background: white; color: #315e54; }
 .transfer-file-button { position: relative; border-color: #9fb4ae; background: #f1f7f5; color: #315e54; overflow: hidden; }
 .transfer-file-button input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.transfer-primary:disabled, .transfer-secondary:disabled { opacity: .45; cursor: default; }
+.transfer-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.bridge-connect-row, .drive-open-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 9px; }
+.bridge-connect-row label, .drive-open-row label { min-width: 0; margin: 0 !important; }
+.bridge-connected-row { min-height: 30px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.bridge-connected-row span { color: #3e6d61; display: inline-flex; align-items: center; gap: 7px; font-size: 9px; font-weight: 750; }
+.bridge-connected-row i { width: 7px; height: 7px; border-radius: 50%; background: #4f8a71; box-shadow: 0 0 0 3px #e4f0ec; }
+.bridge-connected-row button { padding: 3px 0; border: 0; background: transparent; color: #617d76; font-size: 8px; font-weight: 750; cursor: pointer; }
+.transfer-local-options { border-bottom: 1px solid var(--line); }
+.transfer-local-options > summary { padding: 13px 18px; color: #536f68; background: #fbfcfc; font-size: 9px; font-weight: 750; cursor: pointer; }
+.transfer-local-options .transfer-section:last-child { border-bottom: 0; }
 .transfer-drive-note { padding: 14px 18px; background: #f7faf9; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .transfer-drive-note p { margin: 0; max-width: 340px; color: #60736f; font-size: 9px; line-height: 1.5; }
 .transfer-drive-note a { flex: 0 0 auto; color: #2d675a; display: inline-flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 750; text-decoration: none; }
@@ -1176,5 +1194,8 @@ h2, h3, p { margin-top: 0; }
 
 @media (max-width: 760px) {
   .workspace.view-ideas:not(.idea-detail-open) .idea-panel { padding-bottom: 88px; }
+  .transfer-modal { max-height: calc(100dvh - 16px); }
+  .bridge-connect-row, .drive-open-row { grid-template-columns: 1fr; }
+  .bridge-connect-row .transfer-secondary, .drive-open-row .transfer-secondary { width: 100%; }
   .transfer-drive-note { align-items: flex-start; flex-direction: column; }
 }
