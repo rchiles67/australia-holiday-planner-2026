@@ -10,16 +10,39 @@ import Timeline from './components/Timeline.jsx'
 import { scenarios as seedDirections, seedBookmarks, seedIdeas } from './data.js'
 
 const STORAGE_KEY = 'drift-australia-2026-v1'
-const DATA_VERSION = 10
+const DATA_VERSION = 11
 const seedIdeaById = new Map(seedIdeas.map((idea) => [idea.id, idea]))
 const seedGalleryIds = new Set(seedIdeas.flatMap((idea) => (idea.gallery || []).map((image) => image.id)))
 const seedBookmarkById = new Map(seedBookmarks.map((bookmark) => [bookmark.id, bookmark]))
 const seedDirectionById = new Map(seedDirections.map((direction) => [direction.id, direction]))
+const seedImageSrcByFileName = new Map(seedIdeas.flatMap((idea) => [idea.image, ...(idea.gallery || []).map((image) => image.src)])
+  .filter(Boolean)
+  .map((src) => [src.split(/[?#]/)[0].split('/').pop(), src]))
 const V4_GALLERY_ADDITIONS = new Map([['tas-hobart', ['url-1784973561723']]])
 const V4_BOOKMARK_ADDITIONS = ['photo-hobart-panorama']
 const V5_REMOVED_IDEA_IDS = new Set(['adelaide-ki'])
 const V5_SEED_REFRESH_FIELDS = ['name', 'region', 'summary', 'color', 'coordinates', 'mapLabel', 'highlights', 'timestamps', 'note', 'tradeoffs', 'season', 'rationale']
 const VALID_STATUSES = new Set(['included', 'maybe', 'excluded'])
+
+function currentSeedAssetSrc(src) {
+  if (typeof src !== 'string' || /^(?:data:|blob:|https?:)/i.test(src)) return src
+  const fileName = src.split(/[?#]/)[0].split('/').pop()
+  return seedImageSrcByFileName.get(fileName) || src
+}
+
+function rebindSeedIdeaImages(idea, currentSeed) {
+  if (!currentSeed) return idea
+  const currentGalleryById = new Map((currentSeed.gallery || []).map((image) => [image.id, image]))
+  const gallery = (idea.gallery || []).map((image) => (
+    currentGalleryById.has(image.id) ? { ...image, ...currentGalleryById.get(image.id) } : image
+  ))
+  const coverImage = gallery.find((image) => image.id === idea.coverImageId)
+  return {
+    ...idea,
+    gallery,
+    image: coverImage?.src || currentSeedAssetSrc(idea.image) || currentSeed.image,
+  }
+}
 
 function normaliseDirection(direction, ideas) {
   const knownIds = new Set(ideas.map((idea) => idea.id))
@@ -73,7 +96,7 @@ function parseImportedPlan(payload) {
         importedIdea.cover = currentSeed.cover || importedIdea.gallery[0]?.url || importedIdea.cover
       }
     }
-    return importedIdea
+    return rebindSeedIdeaImages(importedIdea, currentSeed)
   })
 
   const directionIds = new Set()
@@ -91,6 +114,7 @@ function parseImportedPlan(payload) {
     }))
     return normaliseDirection({
       ...direction,
+      image: currentSeedAssetSrc(direction.image),
       days: clampWholeNumber(direction.days, 1, 60, 28),
       plan,
       order: Array.isArray(direction.order) ? direction.order : [],
@@ -188,7 +212,7 @@ function loadState() {
           || currentSeed.image
       }
       if ((saved.version || 0) < 9) mergedIdea.area = currentSeed.area
-      return mergedIdea
+      return rebindSeedIdeaImages(mergedIdea, currentSeed)
     })
     seedIdeas.filter((idea) => !savedIds.has(idea.id)).forEach((idea) => ideas.push(idea))
     if ((saved.version || 0) < 6) {
@@ -223,7 +247,7 @@ function loadState() {
           days: (saved.version || 0) < 7 ? currentSeed.days : direction.days,
           pace: currentSeed.pace,
           transit: currentSeed.transit,
-          image: direction.image || currentSeed.image,
+          image: currentSeedAssetSrc(direction.image || currentSeed.image),
           summary: currentSeed.summary,
           pros: currentSeed.pros,
         }
