@@ -1,11 +1,12 @@
 import { X } from 'lucide-react'
 import { useState } from 'react'
 
-export default function AddIdeaModal({ idea, onClose, onSave }) {
+export default function AddIdeaModal({ idea, areas = [], initialArea = '', onClose, onSave }) {
   const editing = Boolean(idea)
   const [form, setForm] = useState({
     name: idea?.name || '',
     region: idea?.region || '',
+    area: idea?.area || initialArea || areas[0] || 'Other ideas',
     days: idea?.days || 3,
     summary: idea?.summary || '',
     note: idea?.note || '',
@@ -46,6 +47,12 @@ export default function AddIdeaModal({ idea, onClose, onSave }) {
             <input type="number" min="1" max="14" value={form.days} onChange={(event) => update('days', Number(event.target.value))} />
           </label>
         </div>
+        <label>
+          Idea group
+          <input list="idea-area-options" value={form.area} onChange={(event) => update('area', event.target.value)} placeholder="e.g. East Tasmania" required />
+          <datalist id="idea-area-options">{areas.map((area) => <option key={area} value={area} />)}</datalist>
+          <small>Change this to move the card to another expandable area.</small>
+        </label>
         <label>
           Short description
           <input value={form.summary} onChange={(event) => update('summary', event.target.value)} placeholder="Why it might earn a place" />

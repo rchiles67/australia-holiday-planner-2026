@@ -5,18 +5,124 @@ import ComparePanel from './components/ComparePanel.jsx'
 import IdeaDetail from './components/IdeaDetail.jsx'
 import IdeaPanel from './components/IdeaPanel.jsx'
 import MapPanel from './components/MapPanel.jsx'
+import PlanTransferModal from './components/PlanTransferModal.jsx'
 import Timeline from './components/Timeline.jsx'
 import { scenarios as seedDirections, seedBookmarks, seedIdeas } from './data.js'
 
 const STORAGE_KEY = 'drift-australia-2026-v1'
-const DATA_VERSION = 7
+const DATA_VERSION = 10
 const seedIdeaById = new Map(seedIdeas.map((idea) => [idea.id, idea]))
+const seedGalleryIds = new Set(seedIdeas.flatMap((idea) => (idea.gallery || []).map((image) => image.id)))
 const seedBookmarkById = new Map(seedBookmarks.map((bookmark) => [bookmark.id, bookmark]))
 const seedDirectionById = new Map(seedDirections.map((direction) => [direction.id, direction]))
 const V4_GALLERY_ADDITIONS = new Map([['tas-hobart', ['url-1784973561723']]])
 const V4_BOOKMARK_ADDITIONS = ['photo-hobart-panorama']
 const V5_REMOVED_IDEA_IDS = new Set(['adelaide-ki'])
 const V5_SEED_REFRESH_FIELDS = ['name', 'region', 'summary', 'color', 'coordinates', 'mapLabel', 'highlights', 'timestamps', 'note', 'tradeoffs', 'season', 'rationale']
+const VALID_STATUSES = new Set(['included', 'maybe', 'excluded'])
+
+function normaliseDirection(direction, ideas) {
+  const knownIds = new Set(ideas.map((idea) => idea.id))
+  const order = [...(direction.order || []).filter((id) => knownIds.has(id))]
+  ideas.forEach((idea) => {
+    if (!order.includes(idea.id)) order.push(idea.id)
+  })
+  const plan = Object.fromEntries(ideas.map((idea) => [idea.id, direction.plan?.[idea.id] || ['excluded', idea.days]]))
+  return { ...direction, order, plan }
+}
+
+function ideasForDirection(ideas, direction) {
+  if (!direction) return ideas
+  const order = new Map((direction.order || []).map((id, index) => [id, index]))
+  return ideas
+    .map((idea) => {
+      const setting = direction.plan?.[idea.id] || ['excluded', idea.days]
+      return { ...idea, status: setting[0], days: setting[1] }
+    })
+    .sort((a, b) => (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) - (order.get(b.id) ?? Number.MAX_SAFE_INTEGER))
+}
+
+function clampWholeNumber(value, minimum, maximum, fallback) {
+  const number = Number(value)
+  return Number.isFinite(number) ? Math.max(minimum, Math.min(maximum, Math.round(number))) : fallback
+}
+
+function parseImportedPlan(payload) {
+  if (!payload || typeof payload !== 'object') throw new Error('The selected file does not contain a plan.')
+  if (!Array.isArray(payload.ideas) || !payload.ideas.length) throw new Error('The plan has no idea cards.')
+  if (!Array.isArray(payload.directions) || !payload.directions.length) throw new Error('The plan has no directions.')
+
+  const ideaIds = new Set()
+  const importedIdeas = payload.ideas.map((idea, index) => {
+    if (!idea || typeof idea !== 'object' || typeof idea.id !== 'string' || typeof idea.name !== 'string') {
+      throw new Error(`Idea ${index + 1} is missing an id or name.`)
+    }
+    if (ideaIds.has(idea.id)) throw new Error(`The idea id “${idea.id}” appears more than once.`)
+    ideaIds.add(idea.id)
+    const importedIdea = {
+      ...idea,
+      days: clampWholeNumber(idea.days, 1, 14, 1),
+      status: VALID_STATUSES.has(idea.status) ? idea.status : 'excluded',
+      gallery: Array.isArray(idea.gallery) ? idea.gallery : [],
+    }
+    const currentSeed = seedIdeaById.get(idea.id)
+    if (Number(payload.version || 0) < 10 && currentSeed) {
+      const customImages = importedIdea.gallery.filter((image) => image?.id && !seedGalleryIds.has(image.id))
+      importedIdea.gallery = [...(currentSeed.gallery || []), ...customImages]
+      if (!importedIdea.gallery.some((image) => image.url === importedIdea.cover)) {
+        importedIdea.cover = currentSeed.cover || importedIdea.gallery[0]?.url || importedIdea.cover
+      }
+    }
+    return importedIdea
+  })
+
+  const directionIds = new Set()
+  const importedDirections = payload.directions.map((direction, index) => {
+    if (!direction || typeof direction !== 'object' || typeof direction.id !== 'string' || typeof direction.name !== 'string') {
+      throw new Error(`Direction ${index + 1} is missing an id or name.`)
+    }
+    if (directionIds.has(direction.id)) throw new Error(`The direction id “${direction.id}” appears more than once.`)
+    directionIds.add(direction.id)
+    const plan = Object.fromEntries(importedIdeas.map((idea) => {
+      const setting = direction.plan?.[idea.id]
+      const status = VALID_STATUSES.has(setting?.[0]) ? setting[0] : 'excluded'
+      const days = clampWholeNumber(setting?.[1], 1, 14, idea.days)
+      return [idea.id, [status, days]]
+    }))
+    return normaliseDirection({
+      ...direction,
+      days: clampWholeNumber(direction.days, 1, 60, 28),
+      plan,
+      order: Array.isArray(direction.order) ? direction.order : [],
+      pros: Array.isArray(direction.pros) ? direction.pros : [],
+    }, importedIdeas)
+  })
+
+  const appliedDirectionId = importedDirections.some((direction) => direction.id === payload.appliedDirectionId)
+    ? payload.appliedDirectionId
+    : importedDirections[0].id
+  const appliedDirection = importedDirections.find((direction) => direction.id === appliedDirectionId)
+  const startDate = typeof payload.startDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(payload.startDate)
+    ? payload.startDate
+    : '2026-10-26'
+
+  return {
+    ideas: ideasForDirection(importedIdeas, appliedDirection),
+    bookmarks: Array.isArray(payload.bookmarks) ? payload.bookmarks : [],
+    directions: importedDirections,
+    appliedDirectionId,
+    tripLength: clampWholeNumber(payload.tripLength, 1, 60, appliedDirection.days),
+    startDate,
+  }
+}
+
+function exportFileName(value) {
+  const cleaned = String(value || '2026-Australia-plan.json')
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-')
+    .trim()
+  const named = cleaned || '2026-Australia-plan.json'
+  return named.toLowerCase().endsWith('.json') ? named : `${named}.json`
+}
 
 function dateFromInput(value) {
   return new Date(`${value}T12:00:00`)
@@ -30,7 +136,7 @@ function dateToInput(date) {
 }
 
 function loadState() {
-  const clean = { version: DATA_VERSION, ideas: seedIdeas, bookmarks: seedBookmarks, directions: seedDirections, appliedDirectionId: 'wa-tas-sydney', tripLength: 28, startDate: '2026-10-26' }
+  const clean = { version: DATA_VERSION, ideas: seedIdeas, bookmarks: seedBookmarks, directions: seedDirections.map((direction) => normaliseDirection(direction, seedIdeas)), appliedDirectionId: 'wa-tas-sydney', tripLength: 28, startDate: '2026-10-26' }
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY))
     if (!saved?.ideas?.length) return clean
@@ -72,6 +178,16 @@ function loadState() {
           mergedIdea.image = mergedIdea.gallery.find((image) => image.id === mergedIdea.coverImageId)?.src || currentSeed.image
         }
       }
+      if ((saved.version || 0) < 10) {
+        const customGallery = gallery.filter((image) => !seedGalleryIds.has(image.id))
+        mergedIdea.gallery = [...(currentSeed.gallery || []), ...customGallery]
+        const savedCustomCover = customGallery.find((image) => image.id === savedIdea.coverImageId)
+        mergedIdea.coverImageId = savedCustomCover?.id || currentSeed.coverImageId || mergedIdea.gallery[0]?.id
+        mergedIdea.image = savedCustomCover?.src
+          || mergedIdea.gallery.find((image) => image.id === mergedIdea.coverImageId)?.src
+          || currentSeed.image
+      }
+      if ((saved.version || 0) < 9) mergedIdea.area = currentSeed.area
       return mergedIdea
     })
     seedIdeas.filter((idea) => !savedIds.has(idea.id)).forEach((idea) => ideas.push(idea))
@@ -97,7 +213,7 @@ function loadState() {
       const savedBookmarkIds = new Set(bookmarks.map((bookmark) => bookmark.id))
       seedBookmarks.filter((bookmark) => !savedBookmarkIds.has(bookmark.id)).forEach((bookmark) => bookmarks.push(bookmark))
     }
-    const directions = (saved.version || 0) >= 5 && Array.isArray(saved.directions) && saved.directions.length
+    const directions = ((saved.version || 0) >= 5 && Array.isArray(saved.directions) && saved.directions.length
       ? saved.directions.map((direction) => {
         const currentSeed = seedDirectionById.get(direction.id)
         if (!currentSeed) return direction
@@ -107,12 +223,12 @@ function loadState() {
           days: (saved.version || 0) < 7 ? currentSeed.days : direction.days,
           pace: currentSeed.pace,
           transit: currentSeed.transit,
-          image: currentSeed.image,
+          image: direction.image || currentSeed.image,
           summary: currentSeed.summary,
           pros: currentSeed.pros,
         }
       })
-      : seedDirections
+      : seedDirections).map((direction) => normaliseDirection(direction, ideas))
     const migratedTripLength = (saved.version || 0) < 7 && saved.appliedDirectionId
       ? directions.find((direction) => direction.id === saved.appliedDirectionId)?.days || saved.tripLength
       : saved.tripLength || clean.tripLength
@@ -140,19 +256,29 @@ export default function App() {
   const [tripLength, setTripLength] = useState(initial.tripLength)
   const [startDate, setStartDate] = useState(initial.startDate)
   const [selectedId, setSelectedId] = useState(initial.ideas.find((idea) => idea.status === 'included')?.id || initial.ideas[0].id)
-  const [activeView, setActiveView] = useState('route')
+  const [activeView, setActiveView] = useState('compare')
   const [ideaDetailOpen, setIdeaDetailOpen] = useState(false)
   const [directionId, setDirectionId] = useState(initial.appliedDirectionId || initial.directions[0]?.id || '')
+  const [editingDirectionId, setEditingDirectionId] = useState(initial.appliedDirectionId || initial.directions[0]?.id || '')
   const [appliedDirectionId, setAppliedDirectionId] = useState(initial.appliedDirectionId)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [initialAddArea, setInitialAddArea] = useState('')
   const [savePulse, setSavePulse] = useState(false)
   const [saveError, setSaveError] = useState(false)
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false)
+  const [transferOpen, setTransferOpen] = useState(false)
 
-  const selectedIdea = ideas.find((idea) => idea.id === selectedId) || ideas[0]
+  const editingDirection = directions.find((direction) => direction.id === editingDirectionId) || directions[0]
+  const appliedDirection = directions.find((direction) => direction.id === appliedDirectionId)
+  const previewDirection = directions.find((direction) => direction.id === directionId) || directions[0]
+  const editingIdeas = useMemo(() => ideasForDirection(ideas, editingDirection), [ideas, editingDirection])
+  const previewIdeas = useMemo(() => ideasForDirection(ideas, previewDirection), [ideas, previewDirection])
+  const displayedIdeas = activeView === 'ideas' ? editingIdeas : activeView === 'compare' ? previewIdeas : ideas
+  const selectedIdea = displayedIdeas.find((idea) => idea.id === selectedId) || displayedIdeas[0]
   const includedCount = ideas.filter((idea) => idea.status === 'included').length
   const maybeCount = ideas.filter((idea) => idea.status === 'maybe').length
+  const areaOptions = useMemo(() => Array.from(new Set(ideas.map((idea) => idea.area || idea.region || 'Other ideas'))), [ideas])
   const endDate = useMemo(() => {
     const date = dateFromInput(startDate)
     date.setDate(date.getDate() + tripLength - 1)
@@ -171,60 +297,100 @@ export default function App() {
     }
   }, [ideas, bookmarks, directions, appliedDirectionId, tripLength, startDate])
 
-  function updateAppliedDirection(id, setting) {
-    if (!appliedDirectionId) return
-    setDirections((current) => current.map((direction) => direction.id === appliedDirectionId
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [activeView, ideaDetailOpen])
+
+  function updateDirectionPlan(targetDirectionId, id, setting) {
+    setDirections((current) => current.map((direction) => direction.id === targetDirectionId
       ? { ...direction, plan: { ...direction.plan, [id]: setting } }
       : direction))
+    if (targetDirectionId === appliedDirectionId) {
+      setIdeas((current) => current.map((idea) => idea.id === id ? { ...idea, status: setting[0], days: setting[1] } : idea))
+    }
   }
 
   function selectIdea(id, openDetails = false) {
     setSelectedId(id)
     if (openDetails) {
+      if (activeView === 'compare') setEditingDirectionId(directionId)
       setActiveView('ideas')
       setIdeaDetailOpen(true)
     }
   }
 
   function updateStatus(id, status) {
-    const idea = ideas.find((item) => item.id === id)
-    if (idea) updateAppliedDirection(id, [status, idea.days])
-    setIdeas((current) => current.map((item) => item.id === id ? { ...item, status } : item))
+    const idea = editingIdeas.find((item) => item.id === id)
+    if (idea && editingDirection) updateDirectionPlan(editingDirection.id, id, [status, idea.days])
   }
 
-  function setDays(id, days) {
+  function setEditingDays(id, days) {
     const safeDays = Math.max(1, Math.min(14, days))
-    const idea = ideas.find((item) => item.id === id)
-    if (idea) updateAppliedDirection(id, [idea.status, safeDays])
-    setIdeas((current) => current.map((item) => item.id === id ? { ...item, days: safeDays } : item))
+    const idea = editingIdeas.find((item) => item.id === id)
+    if (idea && editingDirection) updateDirectionPlan(editingDirection.id, id, [idea.status, safeDays])
   }
 
   function updateDays(id, change) {
-    const idea = ideas.find((item) => item.id === id)
-    if (idea) setDays(id, idea.days + change)
+    const idea = editingIdeas.find((item) => item.id === id)
+    if (idea) setEditingDays(id, idea.days + change)
   }
 
-  function reorder(sourceId, targetId) {
-    setIdeas((current) => {
-      const next = [...current]
-      const sourceIndex = next.findIndex((idea) => idea.id === sourceId)
-      const targetIndex = next.findIndex((idea) => idea.id === targetId)
-      if (sourceIndex < 0 || targetIndex < 0) return current
-      const [source] = next.splice(sourceIndex, 1)
-      next.splice(targetIndex, 0, source)
-      return next
-    })
+  function reorderDirection(targetDirectionId, sourceId, targetId, targetArea) {
+    setDirections((current) => current.map((direction) => {
+      if (direction.id !== targetDirectionId) return direction
+      const order = [...direction.order]
+      const sourceIndex = order.indexOf(sourceId)
+      const targetIndex = order.indexOf(targetId)
+      if (sourceIndex < 0 || targetIndex < 0) return direction
+      const [source] = order.splice(sourceIndex, 1)
+      order.splice(targetIndex, 0, source)
+      return { ...direction, order }
+    }))
+    if (targetArea) setIdeas((current) => current.map((idea) => idea.id === sourceId ? { ...idea, area: targetArea } : idea))
+    if (targetDirectionId === appliedDirectionId) {
+      setIdeas((current) => {
+        const next = [...current]
+        const sourceIndex = next.findIndex((idea) => idea.id === sourceId)
+        const targetIndex = next.findIndex((idea) => idea.id === targetId)
+        if (sourceIndex < 0 || targetIndex < 0) return current
+        const [source] = next.splice(sourceIndex, 1)
+        next.splice(targetIndex, 0, source)
+        return next
+      })
+    }
+  }
+
+  function setRouteDays(id, days) {
+    const safeDays = Math.max(1, Math.min(14, days))
+    const idea = ideas.find((item) => item.id === id)
+    if (idea && appliedDirectionId) updateDirectionPlan(appliedDirectionId, id, [idea.status, safeDays])
+  }
+
+  function setDirectionLength(targetDirectionId, days) {
+    const safeDays = Math.max(1, Math.min(60, days || 1))
+    setDirections((current) => current.map((direction) => direction.id === targetDirectionId ? { ...direction, days: safeDays } : direction))
+    if (targetDirectionId === appliedDirectionId) setTripLength(safeDays)
+  }
+
+  function setDirectionCover(targetDirectionId, image) {
+    setDirections((current) => current.map((direction) => direction.id === targetDirectionId ? { ...direction, image } : direction))
   }
 
   function createIdea(form) {
+    const status = editingDirectionId === appliedDirectionId ? 'maybe' : 'excluded'
     const idea = {
       id: `custom-${Date.now()}`, name: form.name.trim(), region: form.region.trim() || 'Other idea',
+      area: form.area.trim() || form.region.trim() || 'Other ideas',
       summary: form.summary.trim() || 'New possibility to explore.', note: form.note.trim() || 'No route notes yet.',
-      days: form.days, status: 'maybe', color: 'blue', highlights: [], gallery: [],
+      days: form.days, status, color: 'blue', highlights: [], gallery: [],
       rationale: 'Duration assessment to add.', tradeoffs: 'Trade-offs to add.', season: 'Seasonal notes to add.',
     }
     setIdeas((current) => [...current, idea])
-    setDirections((current) => current.map((direction) => ({ ...direction, plan: { ...direction.plan, [idea.id]: ['excluded', idea.days] } })))
+    setDirections((current) => current.map((direction) => ({
+      ...direction,
+      order: [...direction.order, idea.id],
+      plan: { ...direction.plan, [idea.id]: [direction.id === editingDirectionId ? 'maybe' : 'excluded', idea.days] },
+    })))
     setSelectedId(idea.id)
     setActiveView('ideas')
     setIdeaDetailOpen(true)
@@ -232,8 +398,9 @@ export default function App() {
     setEditingId(null)
   }
 
-  function openAddIdea() {
+  function openAddIdea(area = '') {
     setEditingId(null)
+    setInitialAddArea(area)
     setModalOpen(true)
   }
 
@@ -250,14 +417,15 @@ export default function App() {
       createIdea(form)
       return
     }
-    const currentIdea = ideas.find((idea) => idea.id === editingId)
+    const currentIdea = editingIdeas.find((idea) => idea.id === editingId)
     const safeDays = Math.max(1, Math.min(14, form.days))
-    if (currentIdea) updateAppliedDirection(editingId, [currentIdea.status, safeDays])
+    if (currentIdea && editingDirection) updateDirectionPlan(editingDirection.id, editingId, [currentIdea.status, safeDays])
     setIdeas((current) => current.map((idea) => idea.id === editingId ? {
       ...idea,
       name: form.name.trim(),
       region: form.region.trim() || 'Other idea',
-      days: safeDays,
+      area: form.area.trim() || form.region.trim() || 'Other ideas',
+      days: editingDirectionId === appliedDirectionId ? safeDays : idea.days,
       summary: form.summary.trim() || 'Possibility to explore.',
       note: form.note.trim(),
     } : idea))
@@ -280,7 +448,7 @@ export default function App() {
     setDirections((current) => current.map((direction) => {
       const plan = { ...direction.plan }
       delete plan[id]
-      return { ...direction, plan }
+      return { ...direction, plan, order: direction.order.filter((ideaId) => ideaId !== id) }
     }))
     if (selectedId === id) {
       setSelectedId(remaining[Math.min(index, remaining.length - 1)].id)
@@ -291,10 +459,7 @@ export default function App() {
   }
 
   function applyDirection(direction) {
-    setIdeas((current) => current.map((idea) => {
-      const setting = direction.plan[idea.id] || ['excluded', idea.days]
-      return { ...idea, status: setting[0], days: setting[1] }
-    }))
+    setIdeas((current) => ideasForDirection(current, direction))
     setTripLength(direction.days)
     setDirectionId(direction.id)
     setAppliedDirectionId(direction.id)
@@ -302,22 +467,26 @@ export default function App() {
     setIdeaDetailOpen(false)
   }
 
-  function addDirection(name) {
+  function addDirection(name, startMode = 'blank') {
+    const duplicate = startMode === 'duplicate'
     const direction = {
       id: `direction-${Date.now()}`,
       name: name.trim(),
       days: tripLength,
-      pace: 'Custom direction',
-      transit: 'Updates from the scheduled route',
+      pace: duplicate ? 'Copied direction' : 'Fresh direction',
+      transit: duplicate ? 'Updates from the copied scheduled route' : 'No transfers until ideas are included',
       image: ideas.find((idea) => idea.status !== 'excluded' && idea.image)?.image || seedIdeas[0].image,
-      summary: 'A saved direction copied from the current Include, Maybe and Exclude choices.',
-      pros: ['Independent choices from the other directions', 'Days and statuses update as this direction is edited', 'Can be removed without deleting any idea cards'],
-      plan: Object.fromEntries(ideas.map((idea) => [idea.id, [idea.status, idea.days]])),
+      summary: duplicate ? 'A saved direction copied from the route currently in use.' : 'A blank direction ready to build from the scenery ideas.',
+      pros: ['Independent choices from the other directions', 'Days, statuses and order update independently', 'Can be removed without deleting any idea cards'],
+      plan: Object.fromEntries(ideas.map((idea) => [idea.id, duplicate ? [idea.status, idea.days] : ['excluded', idea.days]])),
+      order: ideas.map((idea) => idea.id),
       custom: true,
     }
     setDirections((current) => [...current, direction])
     setDirectionId(direction.id)
-    setAppliedDirectionId(direction.id)
+    setEditingDirectionId(direction.id)
+    setActiveView('ideas')
+    setIdeaDetailOpen(false)
   }
 
   function removeDirection(id) {
@@ -327,7 +496,13 @@ export default function App() {
     const remaining = directions.filter((item) => item.id !== id)
     setDirections(remaining)
     if (directionId === id) setDirectionId(remaining[0].id)
-    if (appliedDirectionId === id) setAppliedDirectionId('')
+    if (editingDirectionId === id) setEditingDirectionId(remaining[0].id)
+    if (appliedDirectionId === id) {
+      const replacement = remaining[0]
+      setAppliedDirectionId(replacement.id)
+      setTripLength(replacement.days)
+      setIdeas((current) => ideasForDirection(current, replacement))
+    }
   }
 
   function updateIdeaField(id, field, value) {
@@ -396,13 +571,35 @@ export default function App() {
 
   function resetPlanner() {
     if (!window.confirm('Reset all local changes to the published starting plan?')) return
-    setIdeas(seedIdeas); setBookmarks(seedBookmarks); setDirections(seedDirections); setDirectionId(seedDirections[0].id); setAppliedDirectionId(seedDirections[0].id); setTripLength(28); setStartDate('2026-10-26'); setSelectedId(seedIdeas[0].id); setActiveView('route'); setIdeaDetailOpen(false)
+    const resetDirections = seedDirections.map((direction) => normaliseDirection(direction, seedIdeas))
+    setIdeas(seedIdeas); setBookmarks(seedBookmarks); setDirections(resetDirections); setDirectionId(resetDirections[0].id); setEditingDirectionId(resetDirections[0].id); setAppliedDirectionId(resetDirections[0].id); setTripLength(28); setStartDate('2026-10-26'); setSelectedId(seedIdeas[0].id); setActiveView('compare'); setIdeaDetailOpen(false)
   }
 
-  function exportPlan() {
-    const payload = { title: 'Australia holiday 2026', exportedAt: new Date().toISOString(), startDate, endDate, tripLength, ideas, bookmarks, directions, appliedDirectionId }
+  function exportPlan(fileName) {
+    const payload = { version: DATA_VERSION, title: 'Australia holiday 2026', exportedAt: new Date().toISOString(), startDate, endDate, tripLength, ideas, bookmarks, directions, appliedDirectionId }
     const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }))
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = 'australia-holiday-plan.json'; anchor.click(); URL.revokeObjectURL(url)
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = exportFileName(fileName); anchor.click(); URL.revokeObjectURL(url)
+  }
+
+  async function importPlan(file) {
+    try {
+      const imported = parseImportedPlan(JSON.parse(await file.text()))
+      if (!window.confirm(`Replace the plan saved in this browser with “${file.name}”?`)) return { message: 'Import cancelled.' }
+      setIdeas(imported.ideas)
+      setBookmarks(imported.bookmarks)
+      setDirections(imported.directions)
+      setAppliedDirectionId(imported.appliedDirectionId)
+      setDirectionId(imported.appliedDirectionId)
+      setEditingDirectionId(imported.appliedDirectionId)
+      setTripLength(imported.tripLength)
+      setStartDate(imported.startDate)
+      setSelectedId(imported.ideas.find((idea) => idea.status === 'included')?.id || imported.ideas[0].id)
+      setActiveView('compare')
+      setIdeaDetailOpen(false)
+      return { message: `Imported “${file.name}”. This browser now contains that plan.` }
+    } catch (error) {
+      return { message: error instanceof Error ? error.message : 'The plan could not be imported.' }
+    }
   }
 
   return (
@@ -411,10 +608,11 @@ export default function App() {
         <button type="button" className="icon-button menu-button" aria-label="Open menu"><Menu size={21} /></button>
         <div className="brand">Drift <span>— Australia 2026</span></div>
         <nav className="primary-nav" aria-label="Planner sections">
-          <button type="button" className={activeView === 'ideas' ? 'active' : ''} onClick={() => { setActiveView('ideas'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><Plus size={15} /> Ideas</button>
-          <button type="button" className={activeView === 'route' ? 'active' : ''} onClick={() => { setActiveView('route'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><MapIcon size={15} /> Route</button>
           <button type="button" className={activeView === 'compare' ? 'active' : ''} onClick={() => { setActiveView('compare'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><Sparkles size={15} /> Compare</button>
+          <button type="button" className={activeView === 'route' ? 'active' : ''} onClick={() => { setActiveView('route'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><MapIcon size={15} /> Route</button>
+          <button type="button" className={activeView === 'ideas' ? 'active' : ''} onClick={() => { setActiveView('ideas'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><Plus size={15} /> Ideas</button>
         </nav>
+        <button type="button" className="mobile-export-button" aria-label="Import or export plan" title="Import or export a plan" onClick={() => setTransferOpen(true)}><Download size={17} /></button>
         <button type="button" className="icon-button mobile-settings-toggle" aria-label="Trip settings" aria-expanded={mobileSettingsOpen} aria-controls="mobile-trip-settings" onClick={() => setMobileSettingsOpen((open) => !open)}><CalendarDays size={18} /></button>
         <div className="date-controls">
           <button type="button" className="date-picker-button" onClick={() => startDateInput.current?.showPicker?.()} aria-label="Open trip start date picker"><CalendarDays size={16} /></button>
@@ -425,7 +623,7 @@ export default function App() {
         </div>
         <div className={`save-state ${savePulse ? 'pulse' : ''} ${saveError ? 'error' : ''}`}><Check size={14} /> {saveError ? 'Browser storage full' : 'Saved on this device'}</div>
         <button type="button" className="icon-button" onClick={resetPlanner} title="Reset planner"><RotateCcw size={17} /></button>
-        <button type="button" className="export-button" onClick={exportPlan}><Download size={16} /> Export</button>
+        <button type="button" className="export-button" onClick={() => setTransferOpen(true)}><Download size={16} /> Export / Import</button>
         {mobileSettingsOpen && (
           <section id="mobile-trip-settings" className="mobile-settings-panel" aria-label="Trip settings">
             <div className="mobile-settings-heading"><div><CalendarDays size={16} /><strong>Trip settings</strong></div><button type="button" aria-label="Close trip settings" onClick={() => setMobileSettingsOpen(false)}><X size={16} /></button></div>
@@ -436,23 +634,24 @@ export default function App() {
             <div className="mobile-settings-summary"><span>{tripLength} days</span><span>{saveError ? 'Could not save locally' : 'Saved on this device'}</span></div>
             <div className="mobile-settings-actions">
               <button type="button" onClick={() => { resetPlanner(); setMobileSettingsOpen(false) }}><RotateCcw size={14} /> Reset</button>
-              <button type="button" className="primary" onClick={() => { exportPlan(); setMobileSettingsOpen(false) }}><Download size={14} /> Export JSON</button>
+              <button type="button" className="primary" onClick={() => { setTransferOpen(true); setMobileSettingsOpen(false) }}><Download size={14} /> Export / Import</button>
             </div>
           </section>
         )}
       </header>
 
       <main className={`workspace view-${activeView} ${ideaDetailOpen ? 'idea-detail-open' : ''}`}>
-        <IdeaPanel ideas={ideas} selectedId={selectedId} onSelect={(id) => selectIdea(id, true)} onStatus={updateStatus} onDays={updateDays} onAdd={openAddIdea} onReorder={setIdeas} onEdit={openEditIdea} onDelete={deleteIdea} />
+        <IdeaPanel ideas={editingIdeas} selectedId={selectedId} onSelect={(id) => selectIdea(id, true)} onStatus={updateStatus} onDays={updateDays} onAdd={openAddIdea} onReorder={(sourceId, targetId, area) => reorderDirection(editingDirection.id, sourceId, targetId, area)} onEdit={openEditIdea} onDelete={deleteIdea} directions={directions} editingDirection={editingDirection} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} />
         <div className="planning-column">
-          {activeView === 'ideas' && ideaDetailOpen && <IdeaDetail idea={selectedIdea} sources={bookmarks} onBack={() => setIdeaDetailOpen(false)} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} onEdit={openEditIdea} onDelete={deleteIdea} />}
-          {activeView === 'route' && <Timeline ideas={ideas} tripLength={tripLength} startDate={dateFromInput(startDate)} onReorder={reorder} onSelect={(id) => selectIdea(id, false)} onAdd={openAddIdea} onSetDays={setDays} />}
-          {activeView === 'compare' && <ComparePanel directions={directions} activeId={directionId} appliedId={appliedDirectionId} onPreview={setDirectionId} onApply={applyDirection} onAdd={addDirection} onRemove={removeDirection} />}
+          {activeView === 'ideas' && ideaDetailOpen && <IdeaDetail idea={selectedIdea} sources={bookmarks} direction={editingDirection} directions={directions} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} onBack={() => setIdeaDetailOpen(false)} onStatus={updateStatus} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} onEdit={openEditIdea} onDelete={deleteIdea} />}
+          {activeView === 'route' && <Timeline ideas={ideas} tripLength={tripLength} startDate={dateFromInput(startDate)} direction={appliedDirection} onReorder={(sourceId, targetId) => reorderDirection(appliedDirectionId, sourceId, targetId)} onSelect={(id) => selectIdea(id, false)} onAdd={() => { setEditingDirectionId(appliedDirectionId); setActiveView('ideas'); setIdeaDetailOpen(false) }} onSetDays={setRouteDays} />}
+          {activeView === 'compare' && <ComparePanel directions={directions} ideas={previewIdeas} activeId={directionId} appliedId={appliedDirectionId} onPreview={setDirectionId} onApply={applyDirection} onAdd={addDirection} onRemove={removeDirection} onCoverChange={setDirectionCover} />}
         </div>
-        <MapPanel ideas={ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
+        <MapPanel ideas={activeView === 'compare' ? previewIdeas : ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
       </main>
       <div className="mobile-status"><span><Save size={14} /> {includedCount} firm + {maybeCount} maybe · {tripLength} days</span><button type="button" onClick={openAddIdea}><Plus size={15} /> Add idea</button></div>
-      {modalOpen && <AddIdeaModal idea={ideas.find((idea) => idea.id === editingId)} onClose={() => { setModalOpen(false); setEditingId(null) }} onSave={saveIdea} />}
+      {modalOpen && <AddIdeaModal idea={ideas.find((idea) => idea.id === editingId)} areas={areaOptions} initialArea={initialAddArea} onClose={() => { setModalOpen(false); setEditingId(null); setInitialAddArea('') }} onSave={saveIdea} />}
+      {transferOpen && <PlanTransferModal onClose={() => setTransferOpen(false)} onExport={exportPlan} onImport={importPlan} />}
     </div>
   )
 }

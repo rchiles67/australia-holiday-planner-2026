@@ -1,8 +1,10 @@
+import { useEffect, useMemo, useState } from 'react'
 import { DndContext, PointerSensor, TouchSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core'
-import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { ArrowRight, Check, CircleHelp, GripVertical, Minus, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, CircleHelp, GripVertical, Minus, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { statusLabels } from '../data.js'
+import DirectionStrip from './DirectionStrip.jsx'
 
 const statusIcons = { included: Check, maybe: CircleHelp, excluded: X }
 
@@ -48,39 +50,59 @@ function SortableIdea({ idea, selected, onSelect, onStatus, onDays, onEdit, onDe
   )
 }
 
-export default function IdeaPanel({ ideas, selectedId, onSelect, onStatus, onDays, onAdd, onReorder, onEdit, onDelete }) {
+export default function IdeaPanel({ ideas, selectedId, onSelect, onStatus, onDays, onAdd, onReorder, onEdit, onDelete, directions, editingDirection, onDirectionChange, onDirectionDaysChange }) {
+  const areas = useMemo(() => Array.from(new Set(ideas.map((idea) => idea.area || idea.region || 'Other ideas'))), [ideas])
+  const [openArea, setOpenArea] = useState(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }))
-  const plannedIdeas = ideas.filter((idea) => idea.status !== 'excluded')
-  const excludedIdeas = ideas.filter((idea) => idea.status === 'excluded')
+
+  useEffect(() => {
+    setOpenArea((current) => current && areas.includes(current) ? current : null)
+  }, [areas])
+
+  function toggleArea(area) {
+    setOpenArea((current) => current === area ? null : area)
+  }
 
   function dragEnd({ active, over }) {
     if (!over || active.id === over.id) return
-    const oldIndex = ideas.findIndex((idea) => idea.id === active.id)
-    const newIndex = ideas.findIndex((idea) => idea.id === over.id)
-    if (oldIndex >= 0 && newIndex >= 0) onReorder(arrayMove(ideas, oldIndex, newIndex))
+    const target = ideas.find((idea) => idea.id === over.id)
+    if (target) onReorder(active.id, over.id, target.area || target.region || 'Other ideas')
   }
 
   return (
     <aside className="idea-panel">
-      <div className="panel-heading"><div><h2>Ideas</h2><p>Open, keep, park or rule out each piece.</p></div><span className="idea-count">{ideas.length}</span></div>
+      <DirectionStrip direction={editingDirection} directions={directions} editable onChange={onDirectionChange} onDaysChange={onDirectionDaysChange} />
+      <div className="panel-heading"><div><h2>Ideas</h2><p>Open an area, then keep, park or rule out each piece.</p></div><span className="idea-count">{ideas.length}</span></div>
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={dragEnd}>
-        <SortableContext items={plannedIdeas.map((idea) => idea.id)} strategy={verticalListSortingStrategy}>
-          <div className="idea-list">
-            {plannedIdeas.map((idea) => <SortableIdea key={idea.id} idea={idea} selected={selectedId === idea.id} onSelect={onSelect} onStatus={onStatus} onDays={onDays} onEdit={onEdit} onDelete={onDelete} />)}
-          </div>
-        </SortableContext>
-        {excludedIdeas.length > 0 && (
-          <section className="excluded-ideas">
-            <div className="excluded-heading"><h3>Excluded ideas</h3><span>{excludedIdeas.length}</span></div>
-            <SortableContext items={excludedIdeas.map((idea) => idea.id)} strategy={verticalListSortingStrategy}>
-              <div className="idea-list excluded-list">
-                {excludedIdeas.map((idea) => <SortableIdea key={idea.id} idea={idea} selected={selectedId === idea.id} onSelect={onSelect} onStatus={onStatus} onDays={onDays} onEdit={onEdit} onDelete={onDelete} />)}
-              </div>
-            </SortableContext>
-          </section>
-        )}
+        <div className="area-groups">
+          {areas.map((area) => {
+            const areaIdeas = ideas.filter((idea) => (idea.area || idea.region || 'Other ideas') === area)
+            const planned = areaIdeas.filter((idea) => idea.status !== 'excluded')
+            const excluded = areaIdeas.filter((idea) => idea.status === 'excluded')
+            const open = openArea === area
+            return (
+              <section className={`area-group ${open ? 'open' : ''}`} key={area}>
+                <button type="button" className="area-heading" onClick={() => toggleArea(area)} aria-expanded={open}>
+                  <span><ChevronDown size={15} /><strong>{area}</strong></span>
+                  <span>{planned.length} planned{excluded.length ? ` · ${excluded.length} excluded` : ''}</span>
+                </button>
+                {open && (
+                  <div className="area-content">
+                    <SortableContext items={areaIdeas.map((idea) => idea.id)} strategy={verticalListSortingStrategy}>
+                      <div className="idea-list">
+                        {planned.map((idea) => <SortableIdea key={idea.id} idea={idea} selected={selectedId === idea.id} onSelect={onSelect} onStatus={onStatus} onDays={onDays} onEdit={onEdit} onDelete={onDelete} />)}
+                        {excluded.length > 0 && <div className="area-excluded-label"><span>Excluded</span><b>{excluded.length}</b></div>}
+                        {excluded.map((idea) => <SortableIdea key={idea.id} idea={idea} selected={selectedId === idea.id} onSelect={onSelect} onStatus={onStatus} onDays={onDays} onEdit={onEdit} onDelete={onDelete} />)}
+                      </div>
+                    </SortableContext>
+                    <button className="add-idea-button compact" type="button" onClick={() => onAdd(area)}><Plus size={14} />Add to {area}</button>
+                  </div>
+                )}
+              </section>
+            )
+          })}
+        </div>
       </DndContext>
-      <button className="add-idea-button" type="button" onClick={onAdd}><Plus size={16} />Add an idea</button>
     </aside>
   )
 }

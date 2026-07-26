@@ -8,7 +8,8 @@ Open the published planner at <https://rchiles67.github.io/australia-holiday-pla
 
 - The GitHub Pages site always shows the latest plan published from `main`.
 - Edits made in the browser save locally on that device; they do not silently change the public plan.
-- **Export** downloads the full local plan as JSON for backup or for sending changes to Codex.
+- **Export / Import** downloads the full local plan under a name you choose, or replaces this browser's plan with a validated JSON export.
+- The transfer panel links to the shared Google Drive folder. Upload remains a separate step because this static GitHub Pages site does not hold either traveller's Google credentials.
 - To publish agreed changes for both travellers, update the source data, commit and push. GitHub Actions redeploys the site automatically.
 
 This deliberately avoids accounts, a database and accidental overwrites. Do not put booking references, passport details or other private information in the public repository.
@@ -27,6 +28,7 @@ This deliberately avoids accounts, a database and accidental overwrites. Do not 
 - Four comparison directions, led by a 28-day WA + Tasmania + Sydney option.
 - Independent Include, Maybe, Exclude and per-card day choices for each direction.
 - Add a direction by copying the current plan, or remove a direction without deleting its idea cards.
+- Choose each direction's cover from photographs belonging to its included ideas.
 - Eight Tasmania scenery modules following the anti-clockwise order in `tasmania_holiday_ideas.md`.
 - Optional Great Ocean Road, Wilsons Promontory, Sydney coast, Blue Mountains and Royal National Park cards.
 - Responsive phone layout; no PowerShell commands are needed to view the published site.

@@ -2,6 +2,7 @@ import { DndContext, PointerSensor, TouchSensor, closestCenter, useSensor, useSe
 import { SortableContext, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { CalendarDays, GripVertical, MapPin, Plane, Plus } from 'lucide-react'
+import DirectionStrip from './DirectionStrip.jsx'
 
 const colorClass = { green: 'green', ochre: 'ochre', violet: 'violet', blue: 'blue', coral: 'coral' }
 
@@ -74,7 +75,7 @@ function SortableRouteBlock({ idea, start, tripLength, startDate, onSelect, onSe
   )
 }
 
-export default function Timeline({ ideas, tripLength, startDate, onReorder, onSelect, onAdd, onSetDays }) {
+export default function Timeline({ ideas, tripLength, startDate, direction, onReorder, onSelect, onAdd, onSetDays }) {
   const scheduled = ideas.filter((idea) => idea.status !== 'excluded')
   const allocated = scheduled.reduce((sum, idea) => sum + idea.days, 0)
   const unallocated = tripLength - allocated
@@ -87,6 +88,7 @@ export default function Timeline({ ideas, tripLength, startDate, onReorder, onSe
 
   return (
     <section className="timeline-panel">
+      <DirectionStrip direction={direction} />
       <div className="route-heading">
         <div><h2>Route</h2><p>Use the six-dot handle to reorder; drag a block’s right edge to change its days.</p></div>
         <div className="route-summary"><CalendarDays size={16} /><span>{formatDate(startDate)} – {formatDate(new Date(startDate.getTime() + (tripLength - 1) * 86400000))}</span></div>

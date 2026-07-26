@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Clipboard, ExternalLink, ImagePlus, Link, Pencil, Star, Trash2, Upload } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CircleHelp, Clipboard, ExternalLink, ImagePlus, Link, Pencil, Star, Trash2, Upload, X } from 'lucide-react'
+import { statusLabels } from '../data.js'
+import DirectionStrip from './DirectionStrip.jsx'
+
+const statusIcons = { included: Check, maybe: CircleHelp, excluded: X }
 
 function readAndResizeImage(file) {
   return new Promise((resolve, reject) => {
@@ -23,7 +27,7 @@ function readAndResizeImage(file) {
   })
 }
 
-export default function IdeaDetail({ idea, sources, onBack, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover, onEdit, onDelete }) {
+export default function IdeaDetail({ idea, sources, direction, directions, onDirectionChange, onDirectionDaysChange, onBack, onStatus, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover, onEdit, onDelete }) {
   const [activeImageId, setActiveImageId] = useState(idea.gallery?.[0]?.id || null)
   const [message, setMessage] = useState('')
   const fileInput = useRef(null)
@@ -110,6 +114,7 @@ export default function IdeaDetail({ idea, sources, onBack, onUpdateField, onAdd
 
   return (
     <section className="idea-detail-panel">
+      <DirectionStrip direction={direction} directions={directions} editable onChange={onDirectionChange} onDaysChange={onDirectionDaysChange} />
       <header className="idea-detail-heading">
         <div>
           <span>{idea.region}</span>
@@ -118,7 +123,12 @@ export default function IdeaDetail({ idea, sources, onBack, onUpdateField, onAdd
         </div>
         <div className="idea-detail-actions">
           <button type="button" className="detail-back" onClick={onBack}><ArrowLeft size={13} /> Back</button>
-          <div className={`detail-status status-${idea.status}`}>{idea.status}</div>
+          <div className="detail-status-selector" aria-label="Idea status">
+            {Object.entries(statusLabels).map(([status, label]) => {
+              const Icon = statusIcons[status]
+              return <button key={status} type="button" className={`status-${status} ${idea.status === status ? 'active' : ''}`} aria-pressed={idea.status === status} onClick={() => onStatus(idea.id, status)}><Icon size={12} />{label}</button>
+            })}
+          </div>
           <button type="button" onClick={() => onEdit(idea.id)}><Pencil size={13} /> Edit idea</button>
           <button type="button" className="danger" onClick={() => onDelete(idea.id)}><Trash2 size={13} /> Delete</button>
         </div>
