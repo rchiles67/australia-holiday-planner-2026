@@ -1,6 +1,6 @@
 # Australia holiday planner — late October / November 2026
 
-A flexible, visual planner for a 3–4 week Australia trip, currently centred on South West Western Australia and Tasmania. The live site is designed to be shared as a permanent read-only starting plan while each visitor’s experiments save in their own browser.
+A flexible, visual planner for a 3–4 week Australia trip, centred on South West Western Australia and Tasmania with scenery-led options around Melbourne and Sydney. The live site is designed to be shared as a permanent starting plan while each visitor’s experiments save in their own browser.
 
 Open the published planner at <https://rchiles67.github.io/australia-holiday-planner-2026/>.
 
@@ -24,6 +24,11 @@ This deliberately avoids accounts, a database and accidental overwrites. Do not 
 - Upload, clipboard-paste and URL-based gallery additions saved locally.
 - Reorderable, pinnable and removable sources/live checks, with location links repeated in the relevant destination.
 - London–Australia and domestic flight search links.
+- Four comparison directions, led by a 28-day WA + Tasmania + Sydney option.
+- Independent Include, Maybe, Exclude and per-card day choices for each direction.
+- Add a direction by copying the current plan, or remove a direction without deleting its idea cards.
+- Eight Tasmania scenery modules following the anti-clockwise order in `tasmania_holiday_ideas.md`.
+- Optional Great Ocean Road, Wilsons Promontory, Sydney coast, Blue Mountains and Royal National Park cards.
 - Responsive phone layout; no PowerShell commands are needed to view the published site.
 
 ## Local development

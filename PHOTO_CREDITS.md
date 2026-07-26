@@ -18,5 +18,12 @@ All bundled travel photographs were selected from Wikimedia Commons with a licen
 | `cradle-mountain.jpg` | Cradle Mountain over Dove Lake | BennyG3255 | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cradle_Mountain_over_Dove_Lake,_Tasmania.jpg) |
 | `strahan.jpg` | Strahan | Timox14 | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Strahan,_Tasmania.jpg) |
 | `stanley-nut.jpg` | Stanley and The Nut | Taspictures | CC0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:StanleyAndNut.jpg) |
+| `cataract-gorge.jpg` | Cataract Gorge in spring | Thomas Calderbank | CC BY-SA 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cataract_Gorge,_Launceston_in_spring.jpg) |
+| `melbourne.jpg` | Melbourne and the Yarra River | Donaldytong | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Melbourne_Yarra_River.jpg) |
+| `great-ocean-road.jpg` | Twelve Apostles | Dietmar Rabich | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Princetown_(AU),_Port_Campbell_National_Park,_Twelve_Apostles_--_2019_--_0969.jpg) |
+| `wilsons-prom.jpg` | Squeaky Beach at sunset, Wilsons Promontory | Iwanttobeanomad | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Wilsons_Promontory_National_Park_-_Squeaky_Beach_sunset.jpg) |
+| `sydney-harbour.jpg` | Sydney Harbour | Shiv Travelogue | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Sydney_Shot.jpg) |
+| `blue-mountains.jpg` | Three Sisters, Blue Mountains | Dietmar Rabich | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Blue_Mountains_National_Park_(AU),_Three_Sisters_--_2019_--_1987-9.jpg) |
+| `royal-national-park.jpg` | The Coast Walk, Royal National Park | Alex Proimos | CC BY 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Bushland,_Royal_National_Park,_The_Coast_Walk,_NSW_Australia_(4045437811).jpg) |
 
 Map coastline and national boundary: [Natural Earth 1:10m Admin 0 Countries](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/), public domain.

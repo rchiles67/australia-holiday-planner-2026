@@ -8,13 +8,32 @@ const MAP_WIDTH = 360
 const MAP_HEIGHT = 280
 const PERTH = [115.8605, -31.9505]
 const HOBART = [147.3272, -42.8821]
+const MELBOURNE = [144.9631, -37.8136]
+const SYDNEY = [151.2093, -33.8688]
 const overviewProjection = geoMercator().fitExtent([[18, 12], [MAP_WIDTH - 18, MAP_HEIGHT - 16]], australiaBoundary)
 
 function routeGroup(idea) {
   if (idea.region === 'Tasmania') return { key: 'tasmania', label: 'Tasmania' }
   if (idea.region.includes('Western Australia') || idea.region === 'South West WA') return { key: 'wa', label: 'WA road' }
-  if (idea.region === 'South Australia') return { key: 'sa', label: 'South Australia' }
+  if (idea.region === 'Victoria') return { key: 'victoria', label: 'Victoria' }
+  if (idea.region === 'New South Wales') return { key: 'nsw', label: 'Sydney & surrounds' }
   return { key: idea.region.toLowerCase().replace(/[^a-z0-9]+/g, '-'), label: idea.region }
+}
+
+const transitionFlights = {
+  'wa:tasmania': ['perth-hobart', 'perth-hobart-fallback'],
+  'wa:victoria': ['perth-melbourne'],
+  'wa:nsw': ['perth-sydney'],
+  'tasmania:victoria': ['hobart-melbourne'],
+  'tasmania:nsw': ['hobart-sydney'],
+  'victoria:nsw': ['melbourne-sydney'],
+}
+
+const returnFlights = {
+  wa: 'perth-london',
+  tasmania: 'hobart-london',
+  victoria: 'melbourne-london',
+  nsw: 'sydney-london',
 }
 
 function projectionForIdeas(ideas) {
@@ -117,17 +136,17 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
   const [mapTab, setMapTab] = useState('overview')
   const scheduledIdeas = ideas.filter((idea) => idea.status !== 'excluded')
   const hasTasmania = scheduledIdeas.some((idea) => idea.region === 'Tasmania')
-  const hasSouthAustralia = scheduledIdeas.some((idea) => idea.region === 'South Australia')
-  const applicableFlightIds = new Set([
-    'london-perth',
-    hasTasmania ? 'perth-hobart' : null,
-    hasTasmania ? 'perth-hobart-fallback' : null,
-    hasSouthAustralia && !hasTasmania ? 'perth-adelaide' : null,
-    hasTasmania && hasSouthAustralia ? 'hobart-adelaide' : null,
-    hasTasmania && !hasSouthAustralia ? 'hobart-london' : null,
-    hasSouthAustralia ? 'adelaide-london' : null,
-    !hasTasmania && !hasSouthAustralia ? 'perth-london' : null,
-  ].filter(Boolean))
+  const travelGroups = scheduledIdeas.reduce((groups, idea) => {
+    const key = routeGroup(idea).key
+    if (groups[groups.length - 1] !== key) groups.push(key)
+    return groups
+  }, [])
+  const applicableFlightIds = new Set()
+  if (travelGroups[0] === 'wa') applicableFlightIds.add('london-perth')
+  travelGroups.slice(1).forEach((group, index) => {
+    ;(transitionFlights[`${travelGroups[index]}:${group}`] || []).forEach((id) => applicableFlightIds.add(id))
+  })
+  if (returnFlights[travelGroups[travelGroups.length - 1]]) applicableFlightIds.add(returnFlights[travelGroups[travelGroups.length - 1]])
   const applicableFlights = flightNotes.filter((flight) => applicableFlightIds.has(flight.id))
   const mapRoutes = useMemo(() => {
     const scheduled = ideas.filter((idea) => idea.status !== 'excluded' && idea.coordinates)
@@ -184,6 +203,8 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
 
   const perthPoint = mapRoutes.projection(PERTH)
   const hobartPoint = mapRoutes.projection(HOBART)
+  const melbournePoint = mapRoutes.projection(MELBOURNE)
+  const sydneyPoint = mapRoutes.projection(SYDNEY)
   const australiaLabelPoint = mapRoutes.projection([134.2, -25.7])
 
   return (
@@ -199,7 +220,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
           {mapRoutes.roadGroups.map((group) => {
             const path = linePath(group.ideas, mapRoutes.pathGenerator)
             const airportReturn = returnPath(group.ideas, mapRoutes.pathGenerator)
-            const roadClass = group.key === 'tasmania' ? 'tas-road' : group.key === 'sa' ? 'sa-road' : 'wa-road'
+            const roadClass = group.key === 'tasmania' ? 'tas-road' : group.key === 'victoria' ? 'vic-road' : group.key === 'nsw' ? 'nsw-road' : 'wa-road'
             return path ? <g key={group.id}><path className={`road-line ${roadClass}`} d={path} /><path className="return-line" d={airportReturn} /></g> : null
           })}
           {mapRoutes.flights.map((flight, index) => <g key={`${flight.path}-${index}`}><path className="flight-arc" d={flight.path} /><Plane className="map-plane" x={flight.planePoint[0] - 6} y={flight.planePoint[1] - 6} width="12" height="12" strokeWidth="1.8" /></g>)}
@@ -207,6 +228,8 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
           {!mapRoutes.activeGroup && <text x={australiaLabelPoint[0]} y={australiaLabelPoint[1]} className="map-label">AUSTRALIA</text>}
           {!mapRoutes.activeGroup && selectedIdea?.id !== 'perth' && <text x={perthPoint[0] + 7} y={perthPoint[1] - 7} className="place-label">Perth</text>}
           {!mapRoutes.activeGroup && selectedIdea?.id !== 'tas-hobart' && <text x={hobartPoint[0] - 7} y={hobartPoint[1] + 13} textAnchor="end" className="place-label">Hobart</text>}
+          {!mapRoutes.activeGroup && travelGroups.includes('victoria') && selectedIdea?.id !== 'vic-melbourne' && <text x={melbournePoint[0] - 7} y={melbournePoint[1] + 13} textAnchor="end" className="place-label">Melbourne</text>}
+          {!mapRoutes.activeGroup && travelGroups.includes('nsw') && selectedIdea?.id !== 'nsw-sydney' && <text x={sydneyPoint[0] + 7} y={sydneyPoint[1] - 7} className="place-label">Sydney</text>}
         </svg>
         <div className="map-legend"><span><i className="legend-dot included" /> Include</span><span><i className="legend-dot maybe" /> Maybe</span><span><i className="legend-line road" /> Road route</span><span><i className="legend-line return" /> Last drive</span><span><i className="legend-line air" /> Flight</span></div>
         <a className="map-attribution" href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/" target="_blank" rel="noreferrer">Natural Earth · public domain</a>

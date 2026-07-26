@@ -23,12 +23,12 @@ function SortableIdea({ idea, selected, onSelect, onStatus, onDays, onEdit, onDe
       <button type="button" className="drag-hint" aria-label={`Reorder ${idea.name}`} {...attributes} {...listeners}>
         <GripVertical size={16} />
       </button>
-      <button className="idea-main" type="button" onClick={() => onSelect(idea.id)} aria-label={`View details for ${idea.name}`}>
+      <div className="idea-main">
         {idea.image && <img src={idea.image} alt="" />}
         {!idea.image && <span className={`idea-swatch ${idea.color}`} />}
         <span className="idea-copy"><span className="idea-region">{idea.region}</span><strong>{idea.name}</strong><small>{idea.summary}</small></span>
-        <span className="detail-cta">Detail <ArrowRight size={11} /></span>
-      </button>
+        <button className="detail-cta" type="button" onClick={() => onSelect(idea.id)} aria-label={`View details for ${idea.name}`}>Detail <ArrowRight size={11} /></button>
+      </div>
       <div className="status-row">
         {Object.keys(statusLabels).map((status) => <StatusButton key={status} value={status} active={idea.status === status} onClick={() => onStatus(idea.id, status)} />)}
       </div>

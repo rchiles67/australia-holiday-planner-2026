@@ -5,6 +5,23 @@ import { CalendarDays, GripVertical, MapPin, Plane, Plus } from 'lucide-react'
 
 const colorClass = { green: 'green', ochre: 'ochre', violet: 'violet', blue: 'blue', coral: 'coral' }
 
+function travelGroup(idea) {
+  if (idea.region === 'Tasmania') return 'tasmania'
+  if (idea.region === 'Victoria') return 'victoria'
+  if (idea.region === 'New South Wales') return 'nsw'
+  if (idea.region.includes('Western Australia') || idea.region === 'South West WA') return 'wa'
+  return idea.region
+}
+
+const transferLabels = {
+  'wa:tasmania': 'Fly Perth → Hobart · compare direct dates and Melbourne connections',
+  'wa:victoria': 'Fly Perth → Melbourne · keep the arrival day light',
+  'wa:nsw': 'Fly Perth → Sydney · allow for the eastbound time change',
+  'tasmania:victoria': 'Fly Hobart → Melbourne · return the Tasmania car before departure',
+  'tasmania:nsw': 'Fly Hobart → Sydney · protect the final international connection',
+  'victoria:nsw': 'Fly Melbourne → Sydney · keep a final Sydney night before London',
+}
+
 function formatDate(date) {
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' }).format(date)
 }
@@ -84,11 +101,11 @@ export default function Timeline({ ideas, tripLength, startDate, onReorder, onSe
             {scheduled.map((idea, index) => {
               const start = runningDay
               runningDay += idea.days
-              const previousRegion = index > 0 ? scheduled[index - 1].region : ''
-              const isFlight = index > 0 && (previousRegion.includes('Western Australia') || previousRegion.includes('South West WA')) && idea.region === 'Tasmania'
+              const previous = index > 0 ? scheduled[index - 1] : null
+              const transfer = previous ? transferLabels[`${travelGroup(previous)}:${travelGroup(idea)}`] : ''
               return (
                 <div key={idea.id} className="route-row">
-                  {isFlight && <div className="transfer-row"><Plane size={15} /><span>Fly Perth → Hobart · keep this date flexible</span></div>}
+                  {transfer && <div className="transfer-row"><Plane size={15} /><span>{transfer}</span></div>}
                   <SortableRouteBlock idea={idea} start={start} tripLength={tripLength} startDate={startDate} onSelect={onSelect} onSetDays={onSetDays} />
                 </div>
               )
