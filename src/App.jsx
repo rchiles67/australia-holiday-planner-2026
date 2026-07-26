@@ -33,9 +33,10 @@ function currentSeedAssetSrc(src) {
 function rebindSeedIdeaImages(idea, currentSeed) {
   if (!currentSeed) return idea
   const currentGalleryById = new Map((currentSeed.gallery || []).map((image) => [image.id, image]))
-  const gallery = (idea.gallery || []).map((image) => (
-    currentGalleryById.has(image.id) ? { ...image, ...currentGalleryById.get(image.id) } : image
-  ))
+  const gallery = (idea.gallery || []).map((image) => {
+    const currentImage = currentGalleryById.has(image.id) ? { ...image, ...currentGalleryById.get(image.id) } : image
+    return { ...currentImage, src: currentSeedAssetSrc(currentImage.src) }
+  })
   const coverImage = gallery.find((image) => image.id === idea.coverImageId)
   return {
     ...idea,
