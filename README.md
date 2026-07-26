@@ -16,9 +16,11 @@ This deliberately avoids accounts, a database and accidental overwrites. Do not 
 
 ## Features
 
-- Accurate Natural Earth 1:10m Australia boundary and true-coordinate route markers.
-- Overview and fitted road-section map tabs for each contiguous group between flights.
-- Route ordering with drag handles and draggable duration edges.
+- Accurate Natural Earth boundaries, true-coordinate route markers and an automatic wider world view when a plan includes an international stop.
+- A map-first Route page with clickable region labels, fitted road-section tabs and a dated weekly/phone itinerary.
+- Dates on compact and detailed idea cards recalculate automatically when ideas are reordered or their days change.
+- Route markers open the destination detail and Back returns to the map and zoom tab that opened it.
+- Self-service map placement for new ideas using manual coordinates or a Wikipedia article lookup; custom map groups create new zoom areas.
 - Editable start and end dates.
 - Visible edit and permanent-delete controls for every destination idea.
 - Destination detail workspaces with galleries, route judgement, trade-offs, seasonal notes and source links.

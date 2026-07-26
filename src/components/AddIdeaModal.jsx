@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { MapPin, Search, X } from 'lucide-react'
 import { useState } from 'react'
 
 export default function AddIdeaModal({ idea, areas = [], initialArea = '', onClose, onSave }) {
@@ -7,10 +7,16 @@ export default function AddIdeaModal({ idea, areas = [], initialArea = '', onClo
     name: idea?.name || '',
     region: idea?.region || '',
     area: idea?.area || initialArea || areas[0] || 'Other ideas',
+    mapGroup: idea?.mapGroup || idea?.region || '',
+    latitude: idea?.coordinates?.[1] ?? '',
+    longitude: idea?.coordinates?.[0] ?? '',
+    wikipediaUrl: idea?.wikipediaUrl || '',
     days: idea?.days || 3,
     summary: idea?.summary || '',
     note: idea?.note || '',
   })
+  const [wikiQuery, setWikiQuery] = useState(idea?.wikipediaUrl || idea?.name || '')
+  const [lookupState, setLookupState] = useState('')
 
   function submit(event) {
     event.preventDefault()
@@ -20,6 +26,40 @@ export default function AddIdeaModal({ idea, areas = [], initialArea = '', onClo
 
   function update(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
+  }
+
+  async function findWikipediaCoordinates() {
+    const query = wikiQuery.trim()
+    if (!query) return
+    setLookupState('Looking up coordinates…')
+    try {
+      let title = query
+      if (/^https?:\/\//i.test(query)) {
+        const url = new URL(query)
+        const match = url.pathname.match(/\/wiki\/(.+)$/)
+        if (!match) throw new Error('Use an English Wikipedia article URL or article title.')
+        title = decodeURIComponent(match[1]).replaceAll('_', ' ')
+      }
+      const endpoint = new URL('https://en.wikipedia.org/w/api.php')
+      endpoint.search = new URLSearchParams({ action: 'query', format: 'json', origin: '*', redirects: '1', prop: 'coordinates', titles: title })
+      const response = await fetch(endpoint)
+      if (!response.ok) throw new Error('Wikipedia did not respond.')
+      const payload = await response.json()
+      const page = Object.values(payload.query?.pages || {})[0]
+      const coordinates = page?.coordinates?.[0]
+      if (!coordinates) throw new Error('That article has no coordinates. Enter them manually below.')
+      const canonicalTitle = page.title || title
+      setForm((current) => ({
+        ...current,
+        latitude: Number(coordinates.lat.toFixed(6)),
+        longitude: Number(coordinates.lon.toFixed(6)),
+        wikipediaUrl: `https://en.wikipedia.org/wiki/${encodeURIComponent(canonicalTitle.replaceAll(' ', '_'))}`,
+        mapGroup: current.mapGroup || current.region || current.area,
+      }))
+      setLookupState(`Found ${canonicalTitle}. Check the marker after saving.`)
+    } catch (error) {
+      setLookupState(error instanceof Error ? error.message : 'Coordinates could not be found.')
+    }
   }
 
   return (
@@ -53,6 +93,24 @@ export default function AddIdeaModal({ idea, areas = [], initialArea = '', onClo
           <datalist id="idea-area-options">{areas.map((area) => <option key={area} value={area} />)}</datalist>
           <small>Change this to move the card to another expandable area.</small>
         </label>
+        <fieldset className="map-fields">
+          <legend><MapPin size={13} /> Map placement</legend>
+          <label>
+            Route map group
+            <input value={form.mapGroup} onChange={(event) => update('mapGroup', event.target.value)} placeholder="e.g. Tasmania or Singapore" />
+            <small>Places in the same group share a zoom map and road leg.</small>
+          </label>
+          <div className="wiki-lookup">
+            <label>Wikipedia article or title<input value={wikiQuery} onChange={(event) => setWikiQuery(event.target.value)} placeholder="e.g. The Nut (Tasmania)" /></label>
+            <button type="button" onClick={findWikipediaCoordinates}><Search size={14} /> Find</button>
+          </div>
+          {lookupState && <p className="lookup-state" aria-live="polite">{lookupState}</p>}
+          <div className="coordinate-row">
+            <label>Latitude<input type="number" step="any" min="-90" max="90" value={form.latitude} onChange={(event) => update('latitude', event.target.value)} placeholder="-42.8821" /></label>
+            <label>Longitude<input type="number" step="any" min="-180" max="180" value={form.longitude} onChange={(event) => update('longitude', event.target.value)} placeholder="147.3272" /></label>
+          </div>
+          <small className="map-fields-note">You can use Wikipedia lookup or type coordinates manually. The saved Wikipedia page is added as a source for this idea.</small>
+        </fieldset>
         <label>
           Short description
           <input value={form.summary} onChange={(event) => update('summary', event.target.value)} placeholder="Why it might earn a place" />

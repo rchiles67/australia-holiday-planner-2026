@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, Check, CircleHelp, Clipboard, ExternalLink, ImagePlus, Link, Pencil, Star, Trash2, Upload, X } from 'lucide-react'
 import { statusLabels } from '../data.js'
 import DirectionStrip from './DirectionStrip.jsx'
+import { scheduleLabel } from '../schedule.js'
 
 const statusIcons = { included: Check, maybe: CircleHelp, excluded: X }
 
@@ -27,7 +28,7 @@ function readAndResizeImage(file) {
   })
 }
 
-export default function IdeaDetail({ idea, sources, direction, directions, onDirectionChange, onDirectionDaysChange, onBack, onStatus, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover, onEdit, onDelete }) {
+export default function IdeaDetail({ idea, scheduleEntry, sources, direction, directions, onDirectionChange, onDirectionDaysChange, onBack, onStatus, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover, onEdit, onDelete }) {
   const [activeImageId, setActiveImageId] = useState(idea.gallery?.[0]?.id || null)
   const [message, setMessage] = useState('')
   const fileInput = useRef(null)
@@ -117,7 +118,7 @@ export default function IdeaDetail({ idea, sources, direction, directions, onDir
       <DirectionStrip direction={direction} directions={directions} editable onChange={onDirectionChange} onDaysChange={onDirectionDaysChange} />
       <header className="idea-detail-heading">
         <div>
-          <span>{idea.region}</span>
+          <span>{idea.region} · {scheduleLabel(scheduleEntry)}</span>
           <h2>{idea.name}</h2>
           <p>{idea.summary}</p>
         </div>

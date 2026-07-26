@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { geoGraticule, geoInterpolate, geoMercator, geoPath } from 'd3-geo'
+import { feature } from 'topojson-client'
 import { ArrowDown, ArrowUp, Car, Check, ExternalLink, Pin, Plane, Plus, Route, Trash2 } from 'lucide-react'
 import { flightNotes } from '../data.js'
 import australiaBoundary from '../map-data/australia-10m.json'
+import worldTopology from 'world-atlas/countries-110m.json'
+import JourneyCalendar from './JourneyCalendar.jsx'
 
 const MAP_WIDTH = 360
 const MAP_HEIGHT = 280
@@ -11,10 +14,28 @@ const HOBART = [147.3272, -42.8821]
 const MELBOURNE = [144.9631, -37.8136]
 const SYDNEY = [151.2093, -33.8688]
 const overviewProjection = geoMercator().fitExtent([[18, 12], [MAP_WIDTH - 18, MAP_HEIGHT - 16]], australiaBoundary)
+const worldCountries = feature(worldTopology, worldTopology.objects.countries)
+
+function isOutsideAustralia(idea) {
+  return idea.coordinates[0] < 110 || idea.coordinates[0] > 155 || idea.coordinates[1] < -46 || idea.coordinates[1] > -8
+}
 
 function routeGroup(idea) {
+  if (idea.mapGroup) {
+    const key = idea.mapGroup.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'other'
+    const aliases = {
+      'western-australia': { key: 'wa', label: 'Perth & WA' },
+      'perth-wa': { key: 'wa', label: 'Perth & WA' },
+      'south-west-wa': { key: 'wa', label: 'Perth & WA' },
+      tasmania: { key: 'tasmania', label: 'Tasmania' },
+      victoria: { key: 'victoria', label: 'Victoria' },
+      'new-south-wales': { key: 'nsw', label: 'Sydney & surrounds' },
+      'sydney-surrounds': { key: 'nsw', label: 'Sydney & surrounds' },
+    }
+    return aliases[key] || { key, label: idea.mapGroup }
+  }
   if (idea.region === 'Tasmania') return { key: 'tasmania', label: 'Tasmania' }
-  if (idea.region.includes('Western Australia') || idea.region === 'South West WA') return { key: 'wa', label: 'WA road' }
+  if (idea.region.includes('Western Australia') || idea.region === 'South West WA') return { key: 'wa', label: 'Perth & WA' }
   if (idea.region === 'Victoria') return { key: 'victoria', label: 'Victoria' }
   if (idea.region === 'New South Wales') return { key: 'nsw', label: 'Sydney & surrounds' }
   return { key: idea.region.toLowerCase().replace(/[^a-z0-9]+/g, '-'), label: idea.region }
@@ -132,7 +153,7 @@ function SourcesEditor({ sources, ideas, onAdd, onDelete, onMove, onChecked, onT
   )
 }
 
-export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAddSource, onDeleteSource, onMoveSource, onCheckedSource, onTogglePin }) {
+export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAddSource, onDeleteSource, onMoveSource, onCheckedSource, onTogglePin, routeMode = false, schedule, onAddIdea }) {
   const [mapTab, setMapTab] = useState('overview')
   const scheduledIdeas = ideas.filter((idea) => idea.status !== 'excluded')
   const hasTasmania = scheduledIdeas.some((idea) => idea.region === 'Tasmania')
@@ -166,7 +187,9 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
       if (repeated.get(group.key) > 1) group.label = `${group.label} ${index + 1}`
     })
     const activeGroup = groups.find((group) => group.id === mapTab)
-    const projection = activeGroup ? projectionForIdeas(activeGroup.ideas) : overviewProjection
+    const hasInternationalStop = scheduled.some(isOutsideAustralia)
+    const activeGroupIsInternational = activeGroup?.ideas.some(isOutsideAustralia)
+    const projection = activeGroup ? projectionForIdeas(activeGroup.ideas) : hasInternationalStop ? projectionForIdeas(scheduled) : overviewProjection
     const pathGenerator = geoPath(projection).digits(2)
     const displayedIdeas = activeGroup?.ideas || scheduled
     const roadGroups = activeGroup ? [activeGroup] : groups
@@ -190,7 +213,8 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
       flights,
       groups,
       graticulePath: pathGenerator(geoGraticule().extent(graticuleExtent).step(activeGroup ? [5, 5] : [10, 10])()),
-      landPath: pathGenerator(australiaBoundary),
+      hasInternationalStop,
+      landPath: pathGenerator(hasInternationalStop && (!activeGroup || activeGroupIsInternational) ? worldCountries : australiaBoundary),
       pathGenerator,
       projection,
       roadGroups,
@@ -208,14 +232,14 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
   const australiaLabelPoint = mapRoutes.projection([134.2, -25.7])
 
   return (
-    <aside className="map-panel">
-      <div className="map-heading"><div><h2>Route map</h2><p>{mapRoutes.activeGroup ? `${mapRoutes.activeGroup.label} · fitted to this road section` : 'Natural Earth 1:10m boundary · true coordinates'}</p></div><Route size={20} /></div>
+    <aside className={`map-panel ${routeMode ? 'route-overview' : ''}`}>
+      <div className="map-heading"><div><h2>Route map</h2><p>{mapRoutes.activeGroup ? `${mapRoutes.activeGroup.label} · fitted to this road section` : mapRoutes.hasInternationalStop ? 'Natural Earth world boundaries · true coordinates' : 'Natural Earth 1:10m boundary · true coordinates'}</p></div><Route size={20} /></div>
       <div className="map-tabs" role="tablist" aria-label="Route map views">
         <button type="button" role="tab" aria-selected={mapTab === 'overview'} className={mapTab === 'overview' ? 'active' : ''} onClick={() => setMapTab('overview')}>Overview</button>
         {mapRoutes.groups.map((group) => <button key={group.id} type="button" role="tab" aria-selected={mapTab === group.id} className={mapTab === group.id ? 'active' : ''} onClick={() => setMapTab(group.id)}>{group.label}</button>)}
       </div>
       <div className="map-canvas">
-        <svg viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} role="img" aria-label={mapRoutes.activeGroup ? `Accurate zoomed map of ${mapRoutes.activeGroup.label}` : 'Accurate overview map of Australia with scheduled route markers'}>
+        <svg viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`} role="img" aria-label={mapRoutes.activeGroup ? `Accurate zoomed map of ${mapRoutes.activeGroup.label}` : mapRoutes.hasInternationalStop ? 'Accurate overview map of the scheduled journey' : 'Accurate overview map of Australia with scheduled route markers'}>
           <path className="map-graticule" d={mapRoutes.graticulePath} /><path className="map-land" d={mapRoutes.landPath} />
           {mapRoutes.roadGroups.map((group) => {
             const path = linePath(group.ideas, mapRoutes.pathGenerator)
@@ -224,16 +248,26 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
             return path ? <g key={group.id}><path className={`road-line ${roadClass}`} d={path} /><path className="return-line" d={airportReturn} /></g> : null
           })}
           {mapRoutes.flights.map((flight, index) => <g key={`${flight.path}-${index}`}><path className="flight-arc" d={flight.path} /><Plane className="map-plane" x={flight.planePoint[0] - 6} y={flight.planePoint[1] - 6} width="12" height="12" strokeWidth="1.8" /></g>)}
+          {!mapRoutes.activeGroup && mapRoutes.groups.map((group) => {
+            const center = mapRoutes.projection([
+              group.ideas.reduce((sum, idea) => sum + idea.coordinates[0], 0) / group.ideas.length,
+              group.ideas.reduce((sum, idea) => sum + idea.coordinates[1], 0) / group.ideas.length,
+            ])
+            const width = Math.max(45, group.label.length * 4.7 + 14)
+            const labelY = center[1] > MAP_HEIGHT - 58 ? center[1] - 29 : center[1] + 10
+            return <g key={`label-${group.id}`} className="map-region-label" role="button" tabIndex="0" aria-label={`Zoom to ${group.label}`} onClick={() => setMapTab(group.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setMapTab(group.id) }}><rect x={center[0] - width / 2} y={labelY} width={width} height="17" rx="8.5" /><text x={center[0]} y={labelY + 11.5} textAnchor="middle">{group.label}</text></g>
+          })}
           {mapRoutes.displayedIdeas.map((idea) => <MapMarker key={idea.id} idea={idea} projection={mapRoutes.projection} selected={selectedIdea?.id === idea.id} showLabel={Boolean(mapRoutes.activeGroup)} onSelect={onSelect} />)}
-          {!mapRoutes.activeGroup && <text x={australiaLabelPoint[0]} y={australiaLabelPoint[1]} className="map-label">AUSTRALIA</text>}
-          {!mapRoutes.activeGroup && selectedIdea?.id !== 'perth' && <text x={perthPoint[0] + 7} y={perthPoint[1] - 7} className="place-label">Perth</text>}
-          {!mapRoutes.activeGroup && selectedIdea?.id !== 'tas-hobart' && <text x={hobartPoint[0] - 7} y={hobartPoint[1] + 13} textAnchor="end" className="place-label">Hobart</text>}
+          {!mapRoutes.activeGroup && !mapRoutes.hasInternationalStop && <text x={australiaLabelPoint[0]} y={australiaLabelPoint[1]} className="map-label">AUSTRALIA</text>}
+          {!mapRoutes.activeGroup && travelGroups.includes('wa') && selectedIdea?.id !== 'perth' && <text x={perthPoint[0] + 7} y={perthPoint[1] - 7} className="place-label">Perth</text>}
+          {!mapRoutes.activeGroup && travelGroups.includes('tasmania') && selectedIdea?.id !== 'tas-hobart' && <text x={hobartPoint[0] - 7} y={hobartPoint[1] + 13} textAnchor="end" className="place-label">Hobart</text>}
           {!mapRoutes.activeGroup && travelGroups.includes('victoria') && selectedIdea?.id !== 'vic-melbourne' && <text x={melbournePoint[0] - 7} y={melbournePoint[1] + 13} textAnchor="end" className="place-label">Melbourne</text>}
           {!mapRoutes.activeGroup && travelGroups.includes('nsw') && selectedIdea?.id !== 'nsw-sydney' && <text x={sydneyPoint[0] + 7} y={sydneyPoint[1] - 7} className="place-label">Sydney</text>}
         </svg>
         <div className="map-legend"><span><i className="legend-dot included" /> Include</span><span><i className="legend-dot maybe" /> Maybe</span><span><i className="legend-line road" /> Road route</span><span><i className="legend-line return" /> Last drive</span><span><i className="legend-line air" /> Flight</span></div>
-        <a className="map-attribution" href="https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/" target="_blank" rel="noreferrer">Natural Earth · public domain</a>
+        <a className="map-attribution" href="https://www.naturalearthdata.com/" target="_blank" rel="noreferrer">Natural Earth · public domain</a>
       </div>
+      {routeMode && schedule && <JourneyCalendar schedule={schedule} onSelect={onSelect} onAdd={onAddIdea} />}
       <section className="flight-panel">
         <div className="subheading"><h3>Flights & transfers</h3><Plane size={17} /></div>
         {applicableFlights.map((flight) => <article key={flight.id} className="flight-row"><div className="flight-icon"><Plane size={15} /></div><div><strong>{flight.route}</strong><span>{flight.time}</span><p>{flight.detail}</p></div><a href={flight.href} target="_blank" rel="noreferrer">{flight.label}</a></article>)}

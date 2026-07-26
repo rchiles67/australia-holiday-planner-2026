@@ -6,11 +6,11 @@ import IdeaDetail from './components/IdeaDetail.jsx'
 import IdeaPanel from './components/IdeaPanel.jsx'
 import MapPanel from './components/MapPanel.jsx'
 import PlanTransferModal from './components/PlanTransferModal.jsx'
-import Timeline from './components/Timeline.jsx'
 import { scenarios as seedDirections, seedBookmarks, seedIdeas } from './data.js'
+import { buildSchedule } from './schedule.js'
 
 const STORAGE_KEY = 'drift-australia-2026-v1'
-const DATA_VERSION = 11
+const DATA_VERSION = 12
 const seedIdeaById = new Map(seedIdeas.map((idea) => [idea.id, idea]))
 const seedGalleryIds = new Set(seedIdeas.flatMap((idea) => (idea.gallery || []).map((image) => image.id)))
 const seedBookmarkById = new Map(seedBookmarks.map((bookmark) => [bookmark.id, bookmark]))
@@ -283,6 +283,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(initial.ideas.find((idea) => idea.status === 'included')?.id || initial.ideas[0].id)
   const [activeView, setActiveView] = useState('compare')
   const [ideaDetailOpen, setIdeaDetailOpen] = useState(false)
+  const [detailOrigin, setDetailOrigin] = useState({ view: 'ideas' })
   const [directionId, setDirectionId] = useState(initial.appliedDirectionId || initial.directions[0]?.id || '')
   const [editingDirectionId, setEditingDirectionId] = useState(initial.appliedDirectionId || initial.directions[0]?.id || '')
   const [appliedDirectionId, setAppliedDirectionId] = useState(initial.appliedDirectionId)
@@ -299,6 +300,8 @@ export default function App() {
   const previewDirection = directions.find((direction) => direction.id === directionId) || directions[0]
   const editingIdeas = useMemo(() => ideasForDirection(ideas, editingDirection), [ideas, editingDirection])
   const previewIdeas = useMemo(() => ideasForDirection(ideas, previewDirection), [ideas, previewDirection])
+  const editingSchedule = useMemo(() => buildSchedule(editingIdeas, startDate, editingDirection?.days || tripLength), [editingIdeas, startDate, editingDirection?.days, tripLength])
+  const appliedSchedule = useMemo(() => buildSchedule(ideas, startDate, tripLength), [ideas, startDate, tripLength])
   const displayedIdeas = activeView === 'ideas' ? editingIdeas : activeView === 'compare' ? previewIdeas : ideas
   const selectedIdea = displayedIdeas.find((idea) => idea.id === selectedId) || displayedIdeas[0]
   const includedCount = ideas.filter((idea) => idea.status === 'included').length
@@ -338,10 +341,17 @@ export default function App() {
   function selectIdea(id, openDetails = false) {
     setSelectedId(id)
     if (openDetails) {
+      setDetailOrigin({ view: activeView })
       if (activeView === 'compare') setEditingDirectionId(directionId)
+      if (activeView === 'route') setEditingDirectionId(appliedDirectionId)
       setActiveView('ideas')
       setIdeaDetailOpen(true)
     }
+  }
+
+  function closeIdeaDetail() {
+    setIdeaDetailOpen(false)
+    setActiveView(detailOrigin.view || 'ideas')
   }
 
   function updateStatus(id, status) {
@@ -385,12 +395,6 @@ export default function App() {
     }
   }
 
-  function setRouteDays(id, days) {
-    const safeDays = Math.max(1, Math.min(14, days))
-    const idea = ideas.find((item) => item.id === id)
-    if (idea && appliedDirectionId) updateDirectionPlan(appliedDirectionId, id, [idea.status, safeDays])
-  }
-
   function setDirectionLength(targetDirectionId, days) {
     const safeDays = Math.max(1, Math.min(60, days || 1))
     setDirections((current) => current.map((direction) => direction.id === targetDirectionId ? { ...direction, days: safeDays } : direction))
@@ -406,6 +410,9 @@ export default function App() {
     const idea = {
       id: `custom-${Date.now()}`, name: form.name.trim(), region: form.region.trim() || 'Other idea',
       area: form.area.trim() || form.region.trim() || 'Other ideas',
+      mapGroup: form.mapGroup.trim() || form.region.trim() || form.area.trim() || 'Other',
+      coordinates: validCoordinates(form),
+      wikipediaUrl: form.wikipediaUrl || '',
       summary: form.summary.trim() || 'New possibility to explore.', note: form.note.trim() || 'No route notes yet.',
       days: form.days, status, color: 'blue', highlights: [], gallery: [],
       rationale: 'Duration assessment to add.', tradeoffs: 'Trade-offs to add.', season: 'Seasonal notes to add.',
@@ -416,7 +423,9 @@ export default function App() {
       order: [...direction.order, idea.id],
       plan: { ...direction.plan, [idea.id]: [direction.id === editingDirectionId ? 'maybe' : 'excluded', idea.days] },
     })))
+    updateWikipediaSource(idea.id, idea.name, idea.wikipediaUrl)
     setSelectedId(idea.id)
+    setDetailOrigin({ view: 'ideas' })
     setActiveView('ideas')
     setIdeaDetailOpen(true)
     setModalOpen(false)
@@ -430,6 +439,7 @@ export default function App() {
   }
 
   function openEditIdea(id) {
+    if (!ideaDetailOpen) setDetailOrigin({ view: 'ideas' })
     setEditingId(id)
     setSelectedId(id)
     setActiveView('ideas')
@@ -450,12 +460,46 @@ export default function App() {
       name: form.name.trim(),
       region: form.region.trim() || 'Other idea',
       area: form.area.trim() || form.region.trim() || 'Other ideas',
+      mapGroup: form.mapGroup.trim() || form.region.trim() || form.area.trim() || 'Other',
+      coordinates: validCoordinates(form) || idea.coordinates,
+      wikipediaUrl: form.wikipediaUrl || '',
       days: editingDirectionId === appliedDirectionId ? safeDays : idea.days,
       summary: form.summary.trim() || 'Possibility to explore.',
       note: form.note.trim(),
     } : idea))
+    updateWikipediaSource(editingId, form.name.trim(), form.wikipediaUrl || '')
     setModalOpen(false)
     setEditingId(null)
+  }
+
+  function validCoordinates(form) {
+    if (form.latitude === '' || form.longitude === '' || form.latitude == null || form.longitude == null) return null
+    const latitude = Number(form.latitude)
+    const longitude = Number(form.longitude)
+    return Number.isFinite(latitude) && Number.isFinite(longitude) && latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180
+      ? [longitude, latitude]
+      : null
+  }
+
+  function updateWikipediaSource(ideaId, ideaName, href) {
+    setBookmarks((current) => {
+      const existingIndex = current.findIndex((source) => source.kind === 'wikipedia' && source.ideaIds?.includes(ideaId))
+      if (!href) return existingIndex >= 0 ? current.filter((_, index) => index !== existingIndex) : current
+      const source = {
+        id: existingIndex >= 0 ? current[existingIndex].id : `source-wikipedia-${Date.now()}`,
+        kind: 'wikipedia',
+        label: `${ideaName} — Wikipedia`,
+        href,
+        category: 'Research',
+        scope: ideaName,
+        ideaIds: [ideaId],
+        note: 'Coordinate source and starting point for location research.',
+        pinned: false,
+        lastChecked: '',
+      }
+      if (existingIndex < 0) return [...current, source]
+      return current.map((item, index) => index === existingIndex ? { ...item, ...source } : item)
+    })
   }
 
   function deleteIdea(id) {
@@ -678,15 +722,14 @@ export default function App() {
       </header>
 
       <main className={`workspace view-${activeView} ${ideaDetailOpen ? 'idea-detail-open' : ''}`}>
-        <IdeaPanel ideas={editingIdeas} selectedId={selectedId} onSelect={(id) => selectIdea(id, true)} onStatus={updateStatus} onDays={updateDays} onAdd={openAddIdea} onReorder={(sourceId, targetId, area) => reorderDirection(editingDirection.id, sourceId, targetId, area)} onEdit={openEditIdea} onDelete={deleteIdea} directions={directions} editingDirection={editingDirection} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} />
+        <IdeaPanel ideas={editingIdeas} selectedId={selectedId} scheduleById={editingSchedule.byId} onSelect={(id) => selectIdea(id, true)} onStatus={updateStatus} onDays={updateDays} onAdd={openAddIdea} onReorder={(sourceId, targetId, area) => reorderDirection(editingDirection.id, sourceId, targetId, area)} onEdit={openEditIdea} onDelete={deleteIdea} directions={directions} editingDirection={editingDirection} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} />
         <div className="planning-column">
-          {activeView === 'ideas' && ideaDetailOpen && <IdeaDetail idea={selectedIdea} sources={bookmarks} direction={editingDirection} directions={directions} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} onBack={() => setIdeaDetailOpen(false)} onStatus={updateStatus} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} onEdit={openEditIdea} onDelete={deleteIdea} />}
-          {activeView === 'route' && <Timeline ideas={ideas} tripLength={tripLength} startDate={dateFromInput(startDate)} direction={appliedDirection} onReorder={(sourceId, targetId) => reorderDirection(appliedDirectionId, sourceId, targetId)} onSelect={(id) => selectIdea(id, false)} onAdd={() => { setEditingDirectionId(appliedDirectionId); setActiveView('ideas'); setIdeaDetailOpen(false) }} onSetDays={setRouteDays} />}
+          {activeView === 'ideas' && ideaDetailOpen && <IdeaDetail idea={selectedIdea} scheduleEntry={editingSchedule.byId.get(selectedIdea.id)} sources={bookmarks} direction={editingDirection} directions={directions} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} onBack={closeIdeaDetail} onStatus={updateStatus} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} onEdit={openEditIdea} onDelete={deleteIdea} />}
           {activeView === 'compare' && <ComparePanel directions={directions} ideas={previewIdeas} activeId={directionId} appliedId={appliedDirectionId} onPreview={setDirectionId} onApply={applyDirection} onAdd={addDirection} onRemove={removeDirection} onCoverChange={setDirectionCover} />}
         </div>
-        <MapPanel ideas={activeView === 'compare' ? previewIdeas : ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
+        <MapPanel ideas={activeView === 'compare' ? previewIdeas : ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} routeMode={activeView === 'route'} schedule={activeView === 'route' ? appliedSchedule : null} onAddIdea={() => { setEditingDirectionId(appliedDirectionId); setActiveView('ideas'); setIdeaDetailOpen(false) }} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
       </main>
-      <div className="mobile-status"><span><Save size={14} /> {includedCount} firm + {maybeCount} maybe · {tripLength} days</span><button type="button" onClick={openAddIdea}><Plus size={15} /> Add idea</button></div>
+      <div className="mobile-status"><span><Save size={14} /> {includedCount} firm + {maybeCount} maybe · {tripLength} days</span><button type="button" onClick={() => openAddIdea()}><Plus size={15} /> Add idea</button></div>
       {modalOpen && <AddIdeaModal idea={ideas.find((idea) => idea.id === editingId)} areas={areaOptions} initialArea={initialAddArea} onClose={() => { setModalOpen(false); setEditingId(null); setInitialAddArea('') }} onSave={saveIdea} />}
       {transferOpen && <PlanTransferModal onClose={() => setTransferOpen(false)} onExport={exportPlan} onImport={importPlan} onImportPayload={importPlanPayload} plan={currentPlanSnapshot()} />}
     </div>
