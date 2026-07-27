@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Check, Clock3, Gauge, Image as ImageIcon, Plus, Trash2, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, Clock3, Gauge, Image as ImageIcon, Plus, Trash2, X } from 'lucide-react'
 
 function choiceCounts(direction) {
   return Object.values(direction.plan || {}).reduce((counts, [status]) => {
@@ -8,11 +8,12 @@ function choiceCounts(direction) {
   }, { included: 0, maybe: 0, excluded: 0 })
 }
 
-export default function ComparePanel({ directions, ideas, activeId, onSelect, onAdd, onRemove, onCoverChange }) {
+export default function ComparePanel({ directions, ideas, activeId, onSelect, onAdd, onRemove, onMove, onCoverChange }) {
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [startMode, setStartMode] = useState('blank')
   const activeDirection = directions.find((direction) => direction.id === activeId) || directions[0]
+  const activeIndex = directions.findIndex((direction) => direction.id === activeDirection?.id)
   const coverChoices = useMemo(() => {
     const seen = new Set()
     return (ideas || []).flatMap((idea) => {
@@ -45,6 +46,8 @@ export default function ComparePanel({ directions, ideas, activeId, onSelect, on
         </div>
         <div className="direction-toolbar">
           <button type="button" className="add-direction-button" onClick={() => setAdding(true)}><Plus size={14} /> Add direction</button>
+          {activeDirection && <button type="button" className="direction-order-button" onClick={() => onMove(activeDirection.id, -1)} disabled={activeIndex <= 0} title="Move this direction left" aria-label={`Move ${activeDirection.name} left`}><ArrowLeft size={14} /></button>}
+          {activeDirection && <button type="button" className="direction-order-button" onClick={() => onMove(activeDirection.id, 1)} disabled={activeIndex >= directions.length - 1} title="Move this direction right" aria-label={`Move ${activeDirection.name} right`}><ArrowRight size={14} /></button>}
           {activeDirection && <button type="button" className="remove-direction" onClick={() => onRemove(activeDirection.id)} disabled={directions.length === 1} title={directions.length === 1 ? 'Keep at least one direction' : 'Remove this direction'}><Trash2 size={13} /> Remove</button>}
         </div>
       </div>

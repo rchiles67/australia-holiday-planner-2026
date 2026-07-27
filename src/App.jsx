@@ -626,6 +626,18 @@ export default function App() {
     }
   }
 
+  function moveDirection(id, change) {
+    setDirections((current) => {
+      const index = current.findIndex((direction) => direction.id === id)
+      const nextIndex = index + change
+      if (index < 0 || nextIndex < 0 || nextIndex >= current.length) return current
+      const reordered = [...current]
+      const [direction] = reordered.splice(index, 1)
+      reordered.splice(nextIndex, 0, direction)
+      return reordered
+    })
+  }
+
   function updateIdeaField(id, field, value) {
     setIdeas((current) => current.map((idea) => idea.id === id ? { ...idea, [field]: value } : idea))
   }
@@ -777,7 +789,7 @@ export default function App() {
         <IdeaPanel ideas={editingIdeas} selectedId={selectedId} scheduleById={editingSchedule.byId} onSelect={(id) => selectIdea(id, true)} onStatus={updateStatus} onDays={updateDays} onAdd={openAddIdea} onReorder={(sourceId, targetId, area) => reorderDirection(editingDirection.id, sourceId, targetId, area)} onEdit={openEditIdea} onDelete={deleteIdea} directions={directions} editingDirection={editingDirection} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} />
         <div className="planning-column">
           {activeView === 'ideas' && ideaDetailOpen && <IdeaDetail idea={selectedIdea} scheduleEntry={editingSchedule.byId.get(selectedIdea.id)} sources={bookmarks} direction={editingDirection} directions={directions} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} onBack={closeIdeaDetail} onStatus={updateStatus} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} onEdit={openEditIdea} onDelete={deleteIdea} />}
-          {activeView === 'compare' && <ComparePanel directions={directions} ideas={previewIdeas} activeId={directionId} onSelect={selectDirection} onAdd={addDirection} onRemove={removeDirection} onCoverChange={setDirectionCover} />}
+          {activeView === 'compare' && <ComparePanel directions={directions} ideas={previewIdeas} activeId={directionId} onSelect={selectDirection} onAdd={addDirection} onRemove={removeDirection} onMove={moveDirection} onCoverChange={setDirectionCover} />}
         </div>
         <MapPanel ideas={activeView === 'compare' ? previewIdeas : ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} routeMode={activeView === 'route'} schedule={activeView === 'compare' ? previewSchedule : appliedSchedule} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
       </main>
