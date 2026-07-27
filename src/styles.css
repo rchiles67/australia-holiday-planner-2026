@@ -1100,7 +1100,6 @@ h2, h3, p { margin-top: 0; }
 
 .direction-toolbar { flex: 0 0 auto; display: flex; align-items: center; gap: 5px; }
 .direction-toolbar button { min-height: 29px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: white; color: #526c66; display: inline-flex; align-items: center; gap: 5px; font-size: 8px; font-weight: 750; cursor: pointer; }
-.direction-toolbar .use-direction-button { border-color: var(--ink); background: var(--ink); color: white; }
 .direction-toolbar .remove-direction { color: #9b554b; }
 .direction-toolbar button:disabled { opacity: .46; cursor: default; }
 .direction-form { grid-template-columns: minmax(220px, 1fr) auto auto; align-items: end; }

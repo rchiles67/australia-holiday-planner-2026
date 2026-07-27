@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowRight, Check, Clock3, Gauge, Image as ImageIcon, Plus, Trash2, X } from 'lucide-react'
+import { Check, Clock3, Gauge, Image as ImageIcon, Plus, Trash2, X } from 'lucide-react'
 
 function choiceCounts(direction) {
   return Object.values(direction.plan || {}).reduce((counts, [status]) => {
@@ -8,7 +8,7 @@ function choiceCounts(direction) {
   }, { included: 0, maybe: 0, excluded: 0 })
 }
 
-export default function ComparePanel({ directions, ideas, activeId, appliedId, onPreview, onApply, onAdd, onRemove, onCoverChange }) {
+export default function ComparePanel({ directions, ideas, activeId, onSelect, onAdd, onRemove, onCoverChange }) {
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const [startMode, setStartMode] = useState('blank')
@@ -41,11 +41,10 @@ export default function ComparePanel({ directions, ideas, activeId, appliedId, o
       <div className="compare-heading">
         <div>
           <h2>Compare directions</h2>
-          <p>Selecting a direction previews its route map and transfers. Nothing changes until you choose Use direction.</p>
+          <p>Select a direction to make it the current plan across Compare, Route and Ideas.</p>
         </div>
         <div className="direction-toolbar">
           <button type="button" className="add-direction-button" onClick={() => setAdding(true)}><Plus size={14} /> Add direction</button>
-          {activeDirection && <button type="button" className="use-direction-button" onClick={() => onApply(activeDirection)} disabled={appliedId === activeDirection.id}>{appliedId === activeDirection.id ? 'In use' : 'Use direction'} <ArrowRight size={14} /></button>}
           {activeDirection && <button type="button" className="remove-direction" onClick={() => onRemove(activeDirection.id)} disabled={directions.length === 1} title={directions.length === 1 ? 'Keep at least one direction' : 'Remove this direction'}><Trash2 size={13} /> Remove</button>}
         </div>
       </div>
@@ -67,10 +66,10 @@ export default function ComparePanel({ directions, ideas, activeId, appliedId, o
         {directions.map((direction) => {
           const counts = choiceCounts(direction)
           return (
-            <button key={direction.id} type="button" role="tab" aria-selected={activeId === direction.id} className={activeId === direction.id ? 'active' : ''} onClick={() => onPreview(direction.id)}>
+            <button key={direction.id} type="button" role="tab" aria-selected={activeId === direction.id} className={activeId === direction.id ? 'active' : ''} onClick={() => onSelect(direction.id)}>
               <span>{direction.name}</span>
               <small>{direction.days}d · {counts.included} in{counts.maybe ? ` · ${counts.maybe} maybe` : ''}</small>
-              {appliedId === direction.id && <em>Current plan</em>}
+              {activeId === direction.id && <em>Current plan</em>}
             </button>
           )
         })}
@@ -82,7 +81,7 @@ export default function ComparePanel({ directions, ideas, activeId, appliedId, o
           <div className="scenario-detail" key={activeDirection.id}>
             <img src={activeDirection.image} alt="" />
             <div className="scenario-copy">
-              <span>{appliedId === activeDirection.id ? 'Current direction' : 'Previewing direction'}</span>
+              <span>Current direction</span>
               <h3>{activeDirection.name}</h3>
               <p>{activeDirection.summary}</p>
               <div className="scenario-stats">
