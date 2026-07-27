@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { geoGraticule, geoInterpolate, geoMercator, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
-import { ArrowDown, ArrowUp, Car, Check, ExternalLink, Pin, Plane, Plus, Route, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Car, Check, ExternalLink, Pin, Plane, Plus, Trash2 } from 'lucide-react'
 import { flightNotes } from '../data.js'
 import australiaBoundary from '../map-data/australia-10m.json'
 import worldTopology from 'world-atlas/countries-110m.json'
@@ -153,7 +153,7 @@ function SourcesEditor({ sources, ideas, onAdd, onDelete, onMove, onChecked, onT
   )
 }
 
-export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAddSource, onDeleteSource, onMoveSource, onCheckedSource, onTogglePin, routeMode = false, schedule, onAddIdea }) {
+export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAddSource, onDeleteSource, onMoveSource, onCheckedSource, onTogglePin, routeMode = false, schedule }) {
   const [mapTab, setMapTab] = useState('overview')
   const scheduledIdeas = ideas.filter((idea) => idea.status !== 'excluded')
   const hasTasmania = scheduledIdeas.some((idea) => idea.region === 'Tasmania')
@@ -233,7 +233,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
 
   return (
     <aside className={`map-panel ${routeMode ? 'route-overview' : ''}`}>
-      <div className="map-heading"><div><h2>Route map</h2><p>{mapRoutes.activeGroup ? `${mapRoutes.activeGroup.label} · fitted to this road section` : mapRoutes.hasInternationalStop ? 'Natural Earth world boundaries · true coordinates' : 'Natural Earth 1:10m boundary · true coordinates'}</p></div><Route size={20} /></div>
+      <div className="map-heading"><div><h2>Route map</h2><p>{mapRoutes.activeGroup ? `${mapRoutes.activeGroup.label} · fitted to this road section` : mapRoutes.hasInternationalStop ? 'Natural Earth world boundaries · true coordinates' : 'Natural Earth 1:10m boundary · true coordinates'}</p></div></div>
       <div className="map-tabs" role="tablist" aria-label="Route map views">
         <button type="button" role="tab" aria-selected={mapTab === 'overview'} className={mapTab === 'overview' ? 'active' : ''} onClick={() => setMapTab('overview')}>Overview</button>
         {mapRoutes.groups.map((group) => <button key={group.id} type="button" role="tab" aria-selected={mapTab === group.id} className={mapTab === group.id ? 'active' : ''} onClick={() => setMapTab(group.id)}>{group.label}</button>)}
@@ -267,7 +267,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
         <div className="map-legend"><span><i className="legend-dot included" /> Include</span><span><i className="legend-dot maybe" /> Maybe</span><span><i className="legend-line road" /> Road route</span><span><i className="legend-line return" /> Last drive</span><span><i className="legend-line air" /> Flight</span></div>
         <a className="map-attribution" href="https://www.naturalearthdata.com/" target="_blank" rel="noreferrer">Natural Earth · public domain</a>
       </div>
-      {routeMode && schedule && <JourneyCalendar schedule={schedule} onSelect={onSelect} onAdd={onAddIdea} />}
+      {routeMode && schedule && <JourneyCalendar schedule={schedule} onSelect={onSelect} />}
       <section className="flight-panel">
         <div className="subheading"><h3>Flights & transfers</h3><Plane size={17} /></div>
         {applicableFlights.map((flight) => <article key={flight.id} className="flight-row"><div className="flight-icon"><Plane size={15} /></div><div><strong>{flight.route}</strong><span>{flight.time}</span><p>{flight.detail}</p></div><a href={flight.href} target="_blank" rel="noreferrer">{flight.label}</a></article>)}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { CalendarDays, Check, Download, Map as MapIcon, Menu, Plus, RotateCcw, Save, Sparkles, X } from 'lucide-react'
+import { CalendarDays, Check, Download, Lightbulb, Menu, RotateCcw, Route as RouteIcon, Sparkles, X } from 'lucide-react'
 import AddIdeaModal from './components/AddIdeaModal.jsx'
 import ComparePanel from './components/ComparePanel.jsx'
 import IdeaDetail from './components/IdeaDetail.jsx'
@@ -304,8 +304,6 @@ export default function App() {
   const appliedSchedule = useMemo(() => buildSchedule(ideas, startDate, tripLength), [ideas, startDate, tripLength])
   const displayedIdeas = activeView === 'ideas' ? editingIdeas : activeView === 'compare' ? previewIdeas : ideas
   const selectedIdea = displayedIdeas.find((idea) => idea.id === selectedId) || displayedIdeas[0]
-  const includedCount = ideas.filter((idea) => idea.status === 'included').length
-  const maybeCount = ideas.filter((idea) => idea.status === 'maybe').length
   const areaOptions = useMemo(() => Array.from(new Set(ideas.map((idea) => idea.area || idea.region || 'Other ideas'))), [ideas])
   const endDate = useMemo(() => {
     const date = dateFromInput(startDate)
@@ -694,8 +692,8 @@ export default function App() {
         <div className="brand">Drift <span>— Australia 2026</span></div>
         <nav className="primary-nav" aria-label="Planner sections">
           <button type="button" className={activeView === 'compare' ? 'active' : ''} onClick={() => { setActiveView('compare'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><Sparkles size={15} /> Compare</button>
-          <button type="button" className={activeView === 'route' ? 'active' : ''} onClick={() => { setActiveView('route'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><MapIcon size={15} /> Route</button>
-          <button type="button" className={activeView === 'ideas' ? 'active' : ''} onClick={() => { setActiveView('ideas'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><Plus size={15} /> Ideas</button>
+          <button type="button" className={activeView === 'route' ? 'active' : ''} onClick={() => { setActiveView('route'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><RouteIcon size={15} /> Route</button>
+          <button type="button" className={activeView === 'ideas' ? 'active' : ''} onClick={() => { setActiveView('ideas'); setIdeaDetailOpen(false); setMobileSettingsOpen(false) }}><Lightbulb className="ideas-nav-icon" size={15} /> Ideas</button>
         </nav>
         <button type="button" className="mobile-export-button" aria-label="Import or export plan" title="Import or export a plan" onClick={() => setTransferOpen(true)}><Download size={17} /></button>
         <button type="button" className="icon-button mobile-settings-toggle" aria-label="Trip settings" aria-expanded={mobileSettingsOpen} aria-controls="mobile-trip-settings" onClick={() => setMobileSettingsOpen((open) => !open)}><CalendarDays size={18} /></button>
@@ -731,9 +729,8 @@ export default function App() {
           {activeView === 'ideas' && ideaDetailOpen && <IdeaDetail idea={selectedIdea} scheduleEntry={editingSchedule.byId.get(selectedIdea.id)} sources={bookmarks} direction={editingDirection} directions={directions} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} onBack={closeIdeaDetail} onStatus={updateStatus} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} onEdit={openEditIdea} onDelete={deleteIdea} />}
           {activeView === 'compare' && <ComparePanel directions={directions} ideas={previewIdeas} activeId={directionId} onSelect={selectDirection} onAdd={addDirection} onRemove={removeDirection} onCoverChange={setDirectionCover} />}
         </div>
-        <MapPanel ideas={activeView === 'compare' ? previewIdeas : ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} routeMode={activeView === 'route'} schedule={activeView === 'route' ? appliedSchedule : null} onAddIdea={() => { setEditingDirectionId(appliedDirectionId); setActiveView('ideas'); setIdeaDetailOpen(false) }} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
+        <MapPanel ideas={activeView === 'compare' ? previewIdeas : ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} routeMode={activeView === 'route'} schedule={activeView === 'route' ? appliedSchedule : null} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
       </main>
-      <div className="mobile-status"><span><Save size={14} /> {includedCount} firm + {maybeCount} maybe · {tripLength} days</span><button type="button" onClick={() => openAddIdea()}><Plus size={15} /> Add idea</button></div>
       {modalOpen && <AddIdeaModal idea={ideas.find((idea) => idea.id === editingId)} areas={areaOptions} initialArea={initialAddArea} onClose={() => { setModalOpen(false); setEditingId(null); setInitialAddArea('') }} onSave={saveIdea} />}
       {transferOpen && <PlanTransferModal onClose={() => setTransferOpen(false)} onExport={exportPlan} onImport={importPlan} onImportPayload={importPlanPayload} plan={currentPlanSnapshot()} />}
     </div>

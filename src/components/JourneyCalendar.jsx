@@ -1,4 +1,4 @@
-import { CalendarDays, Plane, Plus } from 'lucide-react'
+import { CalendarDays, Plane } from 'lucide-react'
 import { formatShortDate } from '../schedule.js'
 
 function travelGroup(idea) {
@@ -23,7 +23,7 @@ function weekFragments(entry, tripLength) {
   return fragments
 }
 
-export default function JourneyCalendar({ schedule, onSelect, onAdd }) {
+export default function JourneyCalendar({ schedule, onSelect }) {
   const weeks = Array.from({ length: Math.ceil(schedule.tripLength / 7) }, (_, index) => index)
   const fragments = schedule.entries.flatMap((entry) => weekFragments(entry, schedule.tripLength).map((fragment) => ({ entry, ...fragment })))
 
@@ -75,7 +75,6 @@ export default function JourneyCalendar({ schedule, onSelect, onAdd }) {
           )
         })}
       </div>
-      <button type="button" className={`journey-balance ${schedule.remaining < 0 ? 'over' : ''}`} onClick={onAdd}><Plus size={14} />{schedule.remaining >= 0 ? `${schedule.remaining} unallocated ${schedule.remaining === 1 ? 'day' : 'days'}` : `${Math.abs(schedule.remaining)} days over plan`}</button>
     </section>
   )
 }
