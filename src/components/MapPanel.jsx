@@ -62,12 +62,19 @@ function flightDatesForSchedule(schedule) {
   const dates = new Map()
   if (!schedule?.entries.length) return dates
   const entries = schedule.entries
+  const waTasTransit = entries.find((entry) => entry.id === 'wa-tas-transit')
+  if (waTasTransit) {
+    dates.set('perth-hobart', waTasTransit.startDate)
+    dates.set('perth-hobart-fallback', waTasTransit.startDate)
+  }
   let previousGroup = routeGroup(entries[0]).key
   if (previousGroup === 'wa') dates.set('london-perth', schedule.tripStart)
   entries.slice(1).forEach((entry) => {
     const group = routeGroup(entry).key
     if (group === previousGroup) return
-    ;(transitionFlights[`${previousGroup}:${group}`] || []).forEach((id) => dates.set(id, entry.startDate))
+    ;(transitionFlights[`${previousGroup}:${group}`] || []).forEach((id) => {
+      if (!dates.has(id)) dates.set(id, entry.startDate)
+    })
     previousGroup = group
   })
   const returnFlightId = returnFlights[previousGroup]

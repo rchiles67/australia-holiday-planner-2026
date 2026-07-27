@@ -8,6 +8,9 @@ All bundled travel photographs were selected from Wikimedia Commons with a licen
 | `boranup-forest.jpg` | Boranup karri forest | Paulkyranc | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Karri_trees_-_Boranup_Forest_01.jpg) |
 | `margaret-river.jpg` | Margaret River coast | Commons contributor | See source page | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:2016_Margaret_River_Australia_-_indian_ocean.jpg) |
 | `albany-coast.jpg` | Coast near Albany | CSIRO | CC BY 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:CSIRO_ScienceImage_2482_Coast_near_Albany_Western_Australia.jpg) |
+| `greens-pool.jpg` | Greens Pool, William Bay National Park | BaroBert | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Greens_Pool,_William_Bay,_Denmark_WA.jpg) |
+| `fitzgerald-river.jpg` | Fitzgerald River National Park toward Thumb Peak | Bradley Hiller | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Fitzgerald_River_National_Park,_Western_Australia._Looking_North_East_towards_Thumb_Peak.jpg) |
+| `wave-rock.jpg` | Wave Rock near Hyden | Brian W. Schaller | Free Art License | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:A198,_Hyden,_Western_Australia,_Wave_Rock,_2007.JPG) |
 | `lucky-bay.jpg` | Lucky Bay | DaHuzyBru | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Lucky_Bay,_Cape_Le_Grand_National_Park,_January_2025_01.jpg) |
 | `tas-hobart-salamanca.jpg` | Salamanca Place and kunanyi | Cheng Fei | CC BY-SA 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hobart_Tasmania_Salamanca_Place.jpg) |
 | `hobart-panorama.jpg` | Greater Hobart from Mount Wellington | JJ Harrison | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Hobart_from_Mount_Wellington_Panorama_1.jpg) |
@@ -17,6 +20,8 @@ All bundled travel photographs were selected from Wikimedia Commons with a licen
 | `cradle-boatshed.jpg` | Cradle Mountain and Dove Lake | Thennicke | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Boat_shed_and_Cradle_Mountain_at_Dove_Lake,_Tas.jpg) |
 | `cradle-mountain.jpg` | Cradle Mountain over Dove Lake | BennyG3255 | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cradle_Mountain_over_Dove_Lake,_Tasmania.jpg) |
 | `strahan.jpg` | Strahan | Timox14 | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Strahan,_Tasmania.jpg) |
+| `maria-island.jpg` | Painted Cliffs, Maria Island | JJ Harrison | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Painted_Cliffs.jpg) |
+| `lake-st-clair.jpg` | Lake St Clair | Diego Delso | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Parque_Nacional_Lago_St_Clair-Tasmania-Australia01.JPG) |
 | `stanley-nut.jpg` | Stanley and The Nut | Taspictures | CC0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:StanleyAndNut.jpg) |
 | `cataract-gorge.jpg` | Cataract Gorge in spring | Thomas Calderbank | CC BY-SA 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Cataract_Gorge,_Launceston_in_spring.jpg) |
 | `melbourne.jpg` | Melbourne and the Yarra River | Donaldytong | CC BY-SA 3.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Melbourne_Yarra_River.jpg) |

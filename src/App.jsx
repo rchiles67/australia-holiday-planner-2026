@@ -10,7 +10,7 @@ import { scenarios as seedDirections, seedBookmarks, seedIdeas } from './data.js
 import { buildSchedule } from './schedule.js'
 
 const STORAGE_KEY = 'drift-australia-2026-v1'
-const DATA_VERSION = 12
+const DATA_VERSION = 13
 const seedIdeaById = new Map(seedIdeas.map((idea) => [idea.id, idea]))
 const seedGalleryIds = new Set(seedIdeas.flatMap((idea) => (idea.gallery || []).map((image) => image.id)))
 const seedBookmarkById = new Map(seedBookmarks.map((bookmark) => [bookmark.id, bookmark]))
@@ -22,6 +22,7 @@ const V4_GALLERY_ADDITIONS = new Map([['tas-hobart', ['url-1784973561723']]])
 const V4_BOOKMARK_ADDITIONS = ['photo-hobart-panorama']
 const V5_REMOVED_IDEA_IDS = new Set(['adelaide-ki'])
 const V5_SEED_REFRESH_FIELDS = ['name', 'region', 'summary', 'color', 'coordinates', 'mapLabel', 'highlights', 'timestamps', 'note', 'tradeoffs', 'season', 'rationale']
+const V13_UPDATED_DIRECTION_IDS = new Set(['wa-tas-sydney'])
 const VALID_STATUSES = new Set(['included', 'maybe', 'excluded'])
 
 function currentSeedAssetSrc(src) {
@@ -77,7 +78,7 @@ function parseImportedPlan(payload) {
   if (!Array.isArray(payload.directions) || !payload.directions.length) throw new Error('The plan has no directions.')
 
   const ideaIds = new Set()
-  const importedIdeas = payload.ideas.map((idea, index) => {
+  let importedIdeas = payload.ideas.map((idea, index) => {
     if (!idea || typeof idea !== 'object' || typeof idea.id !== 'string' || typeof idea.name !== 'string') {
       throw new Error(`Idea ${index + 1} is missing an id or name.`)
     }
@@ -99,9 +100,23 @@ function parseImportedPlan(payload) {
     }
     return rebindSeedIdeaImages(importedIdea, currentSeed)
   })
+  if (Number(payload.version || 0) < 13) {
+    importedIdeas = importedIdeas.map((idea) => {
+      const currentSeed = seedIdeaById.get(idea.id)
+      if (!currentSeed) return idea
+      const refreshed = { ...idea, area: currentSeed.area }
+      V5_SEED_REFRESH_FIELDS.forEach((field) => {
+        if (field in currentSeed) refreshed[field] = currentSeed[field]
+        else delete refreshed[field]
+      })
+      return rebindSeedIdeaImages(refreshed, currentSeed)
+    })
+    const importedIdeaIds = new Set(importedIdeas.map((idea) => idea.id))
+    seedIdeas.filter((idea) => !importedIdeaIds.has(idea.id)).forEach((idea) => importedIdeas.push(idea))
+  }
 
   const directionIds = new Set()
-  const importedDirections = payload.directions.map((direction, index) => {
+  let importedDirections = payload.directions.map((direction, index) => {
     if (!direction || typeof direction !== 'object' || typeof direction.id !== 'string' || typeof direction.name !== 'string') {
       throw new Error(`Direction ${index + 1} is missing an id or name.`)
     }
@@ -113,6 +128,9 @@ function parseImportedPlan(payload) {
       const days = clampWholeNumber(setting?.[1], 1, 14, idea.days)
       return [idea.id, [status, days]]
     }))
+    if (Number(payload.version || 0) < 13 && V13_UPDATED_DIRECTION_IDS.has(direction.id)) {
+      return normaliseDirection(seedDirectionById.get(direction.id), importedIdeas)
+    }
     return normaliseDirection({
       ...direction,
       image: currentSeedAssetSrc(direction.image),
@@ -122,6 +140,12 @@ function parseImportedPlan(payload) {
       pros: Array.isArray(direction.pros) ? direction.pros : [],
     }, importedIdeas)
   })
+  if (Number(payload.version || 0) < 13) {
+    const importedDirectionIds = new Set(importedDirections.map((direction) => direction.id))
+    seedDirections
+      .filter((direction) => !importedDirectionIds.has(direction.id))
+      .forEach((direction) => importedDirections.push(normaliseDirection(direction, importedIdeas)))
+  }
 
   const appliedDirectionId = importedDirections.some((direction) => direction.id === payload.appliedDirectionId)
     ? payload.appliedDirectionId
@@ -131,9 +155,14 @@ function parseImportedPlan(payload) {
     ? payload.startDate
     : '2026-10-26'
 
+  const importedBookmarks = Array.isArray(payload.bookmarks) ? [...payload.bookmarks] : []
+  if (Number(payload.version || 0) < 13) {
+    const importedBookmarkIds = new Set(importedBookmarks.map((bookmark) => bookmark.id))
+    seedBookmarks.filter((bookmark) => !importedBookmarkIds.has(bookmark.id)).forEach((bookmark) => importedBookmarks.push(bookmark))
+  }
   return {
     ideas: ideasForDirection(importedIdeas, appliedDirection),
-    bookmarks: Array.isArray(payload.bookmarks) ? payload.bookmarks : [],
+    bookmarks: importedBookmarks,
     directions: importedDirections,
     appliedDirectionId,
     tripLength: clampWholeNumber(payload.tripLength, 1, 60, appliedDirection.days),
@@ -213,6 +242,13 @@ function loadState() {
           || currentSeed.image
       }
       if ((saved.version || 0) < 9) mergedIdea.area = currentSeed.area
+      if ((saved.version || 0) < 13) {
+        V5_SEED_REFRESH_FIELDS.forEach((field) => {
+          if (field in currentSeed) mergedIdea[field] = currentSeed[field]
+          else delete mergedIdea[field]
+        })
+        mergedIdea.area = currentSeed.area
+      }
       return rebindSeedIdeaImages(mergedIdea, currentSeed)
     })
     seedIdeas.filter((idea) => !savedIds.has(idea.id)).forEach((idea) => ideas.push(idea))
@@ -238,10 +274,15 @@ function loadState() {
       const savedBookmarkIds = new Set(bookmarks.map((bookmark) => bookmark.id))
       seedBookmarks.filter((bookmark) => !savedBookmarkIds.has(bookmark.id)).forEach((bookmark) => bookmarks.push(bookmark))
     }
-    const directions = ((saved.version || 0) >= 5 && Array.isArray(saved.directions) && saved.directions.length
+    if ((saved.version || 0) < 13) {
+      const savedBookmarkIds = new Set(bookmarks.map((bookmark) => bookmark.id))
+      seedBookmarks.filter((bookmark) => !savedBookmarkIds.has(bookmark.id)).forEach((bookmark) => bookmarks.push(bookmark))
+    }
+    let directions = ((saved.version || 0) >= 5 && Array.isArray(saved.directions) && saved.directions.length
       ? saved.directions.map((direction) => {
         const currentSeed = seedDirectionById.get(direction.id)
         if (!currentSeed) return direction
+        if ((saved.version || 0) < 13 && V13_UPDATED_DIRECTION_IDS.has(direction.id)) return currentSeed
         return {
           ...direction,
           name: currentSeed.name,
@@ -254,17 +295,25 @@ function loadState() {
         }
       })
       : seedDirections).map((direction) => normaliseDirection(direction, ideas))
+    if ((saved.version || 0) < 13) {
+      const savedDirectionIds = new Set(directions.map((direction) => direction.id))
+      seedDirections
+        .filter((direction) => !savedDirectionIds.has(direction.id))
+        .forEach((direction) => directions.push(normaliseDirection(direction, ideas)))
+    }
     const migratedTripLength = (saved.version || 0) < 7 && saved.appliedDirectionId
       ? directions.find((direction) => direction.id === saved.appliedDirectionId)?.days || saved.tripLength
       : saved.tripLength || clean.tripLength
+    const appliedDirectionId = (saved.version || 0) >= 5 ? (saved.appliedDirectionId || '') : ''
+    const appliedDirection = directions.find((direction) => direction.id === appliedDirectionId)
     return {
       ...clean,
       ...saved,
       version: DATA_VERSION,
-      ideas,
+      ideas: (saved.version || 0) < 13 && appliedDirection ? ideasForDirection(ideas, appliedDirection) : ideas,
       bookmarks,
       directions,
-      appliedDirectionId: (saved.version || 0) >= 5 ? (saved.appliedDirectionId || '') : '',
+      appliedDirectionId,
       tripLength: migratedTripLength,
     }
   } catch {
