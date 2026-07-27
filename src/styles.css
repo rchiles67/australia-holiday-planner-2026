@@ -1222,8 +1222,8 @@ h2, h3, p { margin-top: 0; }
 .route-overview > .journey-calendar { grid-column: 1 / -1; }
 .route-overview > .map-heading { padding: 19px 22px 12px; }
 .route-overview > .map-canvas { height: min(38vw, 420px); min-height: 360px; }
-.route-overview > .flight-panel { grid-column: 1; border-right: 1px solid var(--line); }
-.route-overview > .sources-editor { grid-column: 2; margin: 0; padding: 16px 20px 24px; border-top: 0; }
+.route-overview > .flight-panel { grid-column: 1; grid-row: auto; border-right: 1px solid var(--line); }
+.route-overview > .sources-editor { grid-column: 2; grid-row: auto; margin: 0; padding: 16px 20px 24px; border-top: 0; }
 
 .map-region-label { cursor: pointer; }
 .map-region-label rect { fill: rgba(255,255,255,.92); stroke: #78958d; stroke-width: .8; }

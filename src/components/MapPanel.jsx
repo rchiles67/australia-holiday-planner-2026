@@ -3,6 +3,7 @@ import { geoGraticule, geoInterpolate, geoMercator, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
 import { ArrowDown, ArrowUp, Car, Check, ExternalLink, Pin, Plane, Plus, Trash2 } from 'lucide-react'
 import { flightNotes } from '../data.js'
+import { formatShortDate } from '../schedule.js'
 import australiaBoundary from '../map-data/australia-10m.json'
 import worldTopology from 'world-atlas/countries-110m.json'
 import JourneyCalendar from './JourneyCalendar.jsx'
@@ -55,6 +56,31 @@ const returnFlights = {
   tasmania: 'hobart-london',
   victoria: 'melbourne-london',
   nsw: 'sydney-london',
+}
+
+function flightDatesForSchedule(schedule) {
+  const dates = new Map()
+  if (!schedule?.entries.length) return dates
+  const entries = schedule.entries
+  let previousGroup = routeGroup(entries[0]).key
+  if (previousGroup === 'wa') dates.set('london-perth', schedule.tripStart)
+  entries.slice(1).forEach((entry) => {
+    const group = routeGroup(entry).key
+    if (group === previousGroup) return
+    ;(transitionFlights[`${previousGroup}:${group}`] || []).forEach((id) => dates.set(id, entry.startDate))
+    previousGroup = group
+  })
+  const returnFlightId = returnFlights[previousGroup]
+  if (returnFlightId) dates.set(returnFlightId, schedule.tripEnd)
+  return dates
+}
+
+function datedFlightHref(flight, date) {
+  if (!date || !flight.from || !flight.to) return flight.href
+  const dateText = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
+  const viaText = flight.via ? ` via ${flight.via}` : ''
+  const query = `One way flights from ${flight.from} to ${flight.to}${viaText} on ${dateText}`
+  return `https://www.google.com/travel/flights?q=${encodeURIComponent(query)}`
 }
 
 function projectionForIdeas(ideas) {
@@ -168,7 +194,11 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
     ;(transitionFlights[`${travelGroups[index]}:${group}`] || []).forEach((id) => applicableFlightIds.add(id))
   })
   if (returnFlights[travelGroups[travelGroups.length - 1]]) applicableFlightIds.add(returnFlights[travelGroups[travelGroups.length - 1]])
-  const applicableFlights = flightNotes.filter((flight) => applicableFlightIds.has(flight.id))
+  const flightDates = flightDatesForSchedule(schedule)
+  const applicableFlights = flightNotes.filter((flight) => applicableFlightIds.has(flight.id)).map((flight) => {
+    const date = flightDates.get(flight.id)
+    return { ...flight, date, href: datedFlightHref(flight, date) }
+  })
   const mapRoutes = useMemo(() => {
     const scheduled = ideas.filter((idea) => idea.status !== 'excluded' && idea.coordinates)
     const groups = []
@@ -270,7 +300,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
       {routeMode && schedule && <JourneyCalendar schedule={schedule} onSelect={onSelect} />}
       <section className="flight-panel">
         <div className="subheading"><h3>Flights & transfers</h3><Plane size={17} /></div>
-        {applicableFlights.map((flight) => <article key={flight.id} className="flight-row"><div className="flight-icon"><Plane size={15} /></div><div><strong>{flight.route}</strong><span>{flight.time}</span><p>{flight.detail}</p></div><a href={flight.href} target="_blank" rel="noreferrer">{flight.label}</a></article>)}
+        {applicableFlights.map((flight) => <article key={flight.id} className="flight-row"><div className="flight-icon"><Plane size={15} /></div><div><strong>{flight.route}</strong><span>{flight.date ? `${formatShortDate(flight.date, true)} · One-way` : flight.time}</span><p>{flight.detail}</p></div><a href={flight.href} target="_blank" rel="noreferrer" aria-label={`${flight.label} ${flight.route}${flight.date ? ` on ${formatShortDate(flight.date, true)}, one-way` : ''}`}>{flight.label}</a></article>)}
         {hasTasmania && <div className="car-note"><Car size={15} /> Tasmania works best as a road loop; allow slower-than-map driving.</div>}
       </section>
       <SourcesEditor sources={sources} ideas={ideas} onAdd={onAddSource} onDelete={onDeleteSource} onMove={onMoveSource} onChecked={onCheckedSource} onTogglePin={onTogglePin} />
