@@ -1,5 +1,5 @@
 import { CalendarDays, Plane } from 'lucide-react'
-import { DndContext, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
+import { DndContext, MouseSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import { ideaDisplayColor } from '../data.js'
 import { formatShortDate } from '../schedule.js'
@@ -54,7 +54,10 @@ function JourneyBlock({ entry, week, column, span, continuesBefore, continuesAft
 export default function JourneyCalendar({ schedule, onSelect, onReorder }) {
   const weeks = Array.from({ length: Math.ceil(schedule.tripLength / 7) }, (_, index) => index)
   const fragments = schedule.entries.flatMap((entry) => weekFragments(entry, schedule.tripLength).map((fragment) => ({ entry, ...fragment })))
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }))
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { distance: 6 } }),
+  )
 
   function dragEnd({ active, over }) {
     const sourceId = active.data.current?.ideaId
