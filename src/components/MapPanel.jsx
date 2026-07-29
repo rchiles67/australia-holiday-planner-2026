@@ -28,6 +28,8 @@ function routeGroup(idea) {
       'western-australia': { key: 'wa', label: 'Perth & WA' },
       'perth-wa': { key: 'wa', label: 'Perth & WA' },
       'south-west-wa': { key: 'wa', label: 'Perth & WA' },
+      'the-kimberley': { key: 'kimberley', label: 'Kimberley' },
+      kimberley: { key: 'kimberley', label: 'Kimberley' },
       tasmania: { key: 'tasmania', label: 'Tasmania' },
       victoria: { key: 'victoria', label: 'Victoria' },
       'new-south-wales': { key: 'nsw', label: 'Sydney & surrounds' },
@@ -43,6 +45,8 @@ function routeGroup(idea) {
 }
 
 const transitionFlights = {
+  'kimberley:wa': ['kununurra-perth'],
+  'wa:kimberley': ['perth-kununurra'],
   'wa:tasmania': ['perth-hobart', 'perth-hobart-fallback'],
   'wa:victoria': ['perth-melbourne'],
   'wa:nsw': ['perth-sydney'],
@@ -56,6 +60,7 @@ const returnFlights = {
   tasmania: 'hobart-london',
   victoria: 'melbourne-london',
   nsw: 'sydney-london',
+  kimberley: 'kununurra-perth',
 }
 
 function flightDatesForSchedule(schedule) {
@@ -68,7 +73,11 @@ function flightDatesForSchedule(schedule) {
     dates.set('perth-hobart-fallback', waTasTransit.startDate)
   }
   let previousGroup = routeGroup(entries[0]).key
-  if (previousGroup === 'wa') dates.set('london-perth', schedule.tripStart)
+  if (previousGroup === 'wa' || previousGroup === 'kimberley') dates.set('london-perth', schedule.tripStart)
+  if (previousGroup === 'kimberley') {
+    const firstKimberleyStop = entries.find((entry) => routeGroup(entry).key === 'kimberley' && entry.id !== 'wa-kimberley-transit')
+    dates.set('perth-kununurra', firstKimberleyStop?.startDate || schedule.tripStart)
+  }
   entries.slice(1).forEach((entry) => {
     const group = routeGroup(entry).key
     if (group === previousGroup) return
@@ -127,6 +136,7 @@ function returnPath(ideas, pathGenerator) {
 }
 
 function MapMarker({ idea, projection, selected, showLabel, onSelect }) {
+  if (idea.hideMapMarker || idea.id === 'wa-kimberley-transit') return null
   const point = projection(idea.coordinates)
   if (!point) return null
   const labelToLeft = point[0] > MAP_WIDTH * 0.68
@@ -196,7 +206,8 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
     return groups
   }, [])
   const applicableFlightIds = new Set()
-  if (travelGroups[0] === 'wa') applicableFlightIds.add('london-perth')
+  if (travelGroups[0] === 'wa' || travelGroups[0] === 'kimberley') applicableFlightIds.add('london-perth')
+  if (travelGroups[0] === 'kimberley') applicableFlightIds.add('perth-kununurra')
   travelGroups.slice(1).forEach((group, index) => {
     ;(transitionFlights[`${travelGroups[index]}:${group}`] || []).forEach((id) => applicableFlightIds.add(id))
   })

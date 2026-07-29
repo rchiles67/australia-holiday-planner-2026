@@ -1,3 +1,5 @@
+import { kimberleyBookmarks, kimberleyDirection, kimberleyIdeas } from './kimberleyData.js'
+
 const asset = (name) => `${import.meta.env.BASE_URL}images/${name}`
 
 const galleryImage = (id, file, caption, credit, license, sourceUrl) => ({
@@ -300,11 +302,13 @@ export const seedIdeas = [
     rationale: 'Two nights avoids attempting a major coastal walk between city traffic and a long-haul departure.',
     gallery: [galleryImage('royal-coast', 'royal-national-park.jpg', 'The Coast Walk, Royal National Park', 'Alex Proimos', 'CC BY 2.0', 'https://commons.wikimedia.org/wiki/File:Bushland,_Royal_National_Park,_The_Coast_Walk,_NSW_Australia_(4045437811).jpg')],
   },
+  ...kimberleyIdeas,
 ]
 
 const directionPlan = (choices) => Object.fromEntries(seedIdeas.map((idea) => [idea.id, choices[idea.id] || ['excluded', idea.days]]))
 
 export const scenarios = [
+  { ...kimberleyDirection, plan: directionPlan(kimberleyDirection.choices), choices: undefined },
   {
     id: 'wa-tas-sydney', name: 'WA + Tasmania + Sydney', days: 28, pace: 'Full, scenery-led', transit: '2 domestic flights + WA and Tasmania road sections',
     image: asset('sydney-harbour.jpg'), summary: 'A realistic South West loop, Tasmania’s strongest landscapes and a Sydney departure buffer—all within 28 calendar days.',
@@ -341,6 +345,8 @@ export const scenarios = [
 
 export const flightNotes = [
   { id: 'london-perth', route: 'London → Perth', from: 'London', to: 'Perth', time: 'Long-haul · live search', detail: 'Compare one-ticket itineraries and leave the first day gentle after the overnight journey.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20London%20to%20Perth%20October%202026', label: 'Search' },
+  { id: 'perth-kununurra', route: 'Perth → Kununurra', from: 'Perth', to: 'Kununurra', time: 'Regional flight', detail: 'Confirm the late-October operating day before fixing the East Kimberley accommodation sequence.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Perth%20to%20Kununurra%20October%202026', label: 'Check dates' },
+  { id: 'kununurra-perth', route: 'Kununurra → Perth', from: 'Kununurra', to: 'Perth', time: 'Regional flight', detail: 'Return to Perth before collecting the southern-WA hire car; schedules may be less frequent late in the season.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Kununurra%20to%20Perth%20November%202026', label: 'Check dates' },
   { id: 'perth-hobart', route: 'Perth → Hobart', from: 'Perth', to: 'Hobart', time: 'Direct or one stop', detail: 'Direct service can be limited, so compare the exact date against connections via Melbourne.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Perth%20to%20Hobart%20November%202026', label: 'Check dates' },
   { id: 'perth-hobart-fallback', route: 'Perth → Melbourne → Hobart', from: 'Perth', to: 'Hobart', via: 'Melbourne', time: 'One-stop fallback', detail: 'A practical fallback if a direct day does not fit. Keep a generous connection on separate tickets.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Perth%20to%20Hobart%20via%20Melbourne%20November%202026', label: 'Compare' },
   { id: 'perth-melbourne', route: 'Perth → Melbourne', from: 'Perth', to: 'Melbourne', time: 'Domestic flight', detail: 'Use when Victoria follows WA; compare arriving early enough to avoid losing the following road-trip day.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Perth%20to%20Melbourne%20November%202026', label: 'Compare' },
@@ -355,6 +361,7 @@ export const flightNotes = [
 ]
 
 export const seedBookmarks = [
+  ...kimberleyBookmarks,
   { id: 'william-bay-parks', label: 'William Bay National Park', href: 'https://exploreparks.dbca.wa.gov.au/park/william-bay-national-park', category: 'Research', scope: 'Denmark & Albany', ideaIds: ['wa-denmark-albany'], note: 'Official Greens Pool, Elephant Rocks, access and construction information.', pinned: true },
   { id: 'fitzgerald-parks', label: 'Fitzgerald River National Park', href: 'https://exploreparks.dbca.wa.gov.au/park/fitzgerald-river-national-park', category: 'Research', scope: 'Bremer Bay / Fitzgerald River', ideaIds: ['wa-bremer-fitzgerald'], note: 'Official park access, walks, alerts and facilities.', pinned: false },
   { id: 'maria-parks', label: 'Maria Island and Painted Cliffs', href: 'https://parks.tas.gov.au/explore-our-parks/maria-island-national-park/painted-cliffs', category: 'Research', scope: 'Maria Island', ideaIds: ['tas-maria'], note: 'Official ferry, tide, safety and walking information.', pinned: false },
