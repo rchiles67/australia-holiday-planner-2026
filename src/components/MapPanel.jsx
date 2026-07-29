@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { geoGraticule, geoInterpolate, geoMercator, geoPath } from 'd3-geo'
 import { feature } from 'topojson-client'
 import { ArrowDown, ArrowUp, Car, Check, ExternalLink, Pin, Plane, Plus, Trash2 } from 'lucide-react'
-import { flightNotes } from '../data.js'
+import { flightNotes, ideaDisplayColor } from '../data.js'
 import { formatShortDate } from '../schedule.js'
 import australiaBoundary from '../map-data/australia-10m.json'
 import worldTopology from 'world-atlas/countries-110m.json'
@@ -67,18 +67,32 @@ function flightDatesForSchedule(schedule) {
   const dates = new Map()
   if (!schedule?.entries.length) return dates
   const entries = schedule.entries
+  const flightCardIds = new Map([
+    ['wa-kimberley-transit', 'perth-kununurra'],
+    ['kimberley-perth-transit', 'kununurra-perth'],
+    ['wa-tas-transit', 'perth-hobart'],
+    ['tas-sydney-transit', 'hobart-sydney'],
+    ['perth-melbourne-transit', 'perth-melbourne'],
+    ['melbourne-sydney-transit', 'melbourne-sydney'],
+  ])
+  entries.forEach((entry) => {
+    const flightId = flightCardIds.get(entry.id)
+    if (flightId) dates.set(flightId, entry.startDate)
+  })
   const waTasTransit = entries.find((entry) => entry.id === 'wa-tas-transit')
   if (waTasTransit) {
     dates.set('perth-hobart', waTasTransit.startDate)
     dates.set('perth-hobart-fallback', waTasTransit.startDate)
   }
-  let previousGroup = routeGroup(entries[0]).key
+  const locationEntries = entries.filter((entry) => entry.kind !== 'flight')
+  if (!locationEntries.length) return dates
+  let previousGroup = routeGroup(locationEntries[0]).key
   if (previousGroup === 'wa' || previousGroup === 'kimberley') dates.set('london-perth', schedule.tripStart)
   if (previousGroup === 'kimberley') {
     const firstKimberleyStop = entries.find((entry) => routeGroup(entry).key === 'kimberley' && entry.id !== 'wa-kimberley-transit')
     dates.set('perth-kununurra', firstKimberleyStop?.startDate || schedule.tripStart)
   }
-  entries.slice(1).forEach((entry) => {
+  locationEntries.slice(1).forEach((entry) => {
     const group = routeGroup(entry).key
     if (group === previousGroup) return
     ;(transitionFlights[`${previousGroup}:${group}`] || []).forEach((id) => {
@@ -136,14 +150,14 @@ function returnPath(ideas, pathGenerator) {
 }
 
 function MapMarker({ idea, projection, selected, showLabel, onSelect }) {
-  if (idea.hideMapMarker || idea.id === 'wa-kimberley-transit') return null
+  if (idea.kind === 'flight' || idea.hideMapMarker || idea.id === 'wa-kimberley-transit') return null
   const point = projection(idea.coordinates)
   if (!point) return null
   const labelToLeft = point[0] > MAP_WIDTH * 0.68
   return (
     <g className={`${selected ? 'active-marker' : ''} ${idea.status === 'maybe' ? 'maybe-marker' : ''}`} role="button" tabIndex="0" aria-label={`Open ${idea.name}`} onClick={() => onSelect(idea.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(idea.id) }}>
       <title>{idea.name}</title>
-      <circle className={`map-marker ${idea.color}`} cx={point[0]} cy={point[1]} r={idea.status === 'maybe' ? 2.25 : 3.65} />
+      <circle className={`map-marker ${ideaDisplayColor(idea)}`} cx={point[0]} cy={point[1]} r={idea.status === 'maybe' ? 2.25 : 3.65} />
       <circle className="map-marker-hit" cx={point[0]} cy={point[1]} r="9" />
       {(selected || showLabel) && <text className="selected-map-label" x={labelToLeft ? point[0] - 7 : point[0] + 7} y={point[1] - 7} textAnchor={labelToLeft ? 'end' : 'start'}>{idea.mapLabel || idea.name}</text>}
     </g>
@@ -196,9 +210,9 @@ function SourcesEditor({ sources, ideas, onAdd, onDelete, onMove, onChecked, onT
   )
 }
 
-export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAddSource, onDeleteSource, onMoveSource, onCheckedSource, onTogglePin, routeMode = false, schedule }) {
+export default function MapPanel({ ideas, selectedIdea, onSelect, onReorder, sources, onAddSource, onDeleteSource, onMoveSource, onCheckedSource, onTogglePin, routeMode = false, schedule }) {
   const [mapTab, setMapTab] = useState('overview')
-  const scheduledIdeas = ideas.filter((idea) => idea.status !== 'excluded')
+  const scheduledIdeas = ideas.filter((idea) => idea.status !== 'excluded' && idea.kind !== 'flight')
   const hasTasmania = scheduledIdeas.some((idea) => idea.region === 'Tasmania')
   const travelGroups = scheduledIdeas.reduce((groups, idea) => {
     const key = routeGroup(idea).key
@@ -218,7 +232,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
     return { ...flight, date, href: datedFlightHref(flight, date) }
   })
   const mapRoutes = useMemo(() => {
-    const scheduled = ideas.filter((idea) => idea.status !== 'excluded' && idea.coordinates)
+    const scheduled = ideas.filter((idea) => idea.status !== 'excluded' && idea.kind !== 'flight' && idea.coordinates)
     const groups = []
     scheduled.forEach((idea) => {
       const category = routeGroup(idea)
@@ -315,7 +329,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, sources, onAdd
         <div className="map-legend"><span><i className="legend-dot included" /> Include</span><span><i className="legend-dot maybe" /> Maybe</span><span><i className="legend-line road" /> Road route</span><span><i className="legend-line return" /> Last drive</span><span><i className="legend-line air" /> Flight</span></div>
         <a className="map-attribution" href="https://www.naturalearthdata.com/" target="_blank" rel="noreferrer">Natural Earth · public domain</a>
       </div>
-      {routeMode && schedule && <JourneyCalendar schedule={schedule} onSelect={onSelect} />}
+      {routeMode && schedule && <JourneyCalendar schedule={schedule} onSelect={onSelect} onReorder={onReorder} />}
       <section className="flight-panel">
         <div className="subheading"><h3>Flights & transfers</h3><Plane size={17} /></div>
         {applicableFlights.map((flight) => <article key={flight.id} className="flight-row"><div className="flight-icon"><Plane size={15} /></div><div><strong>{flight.route}</strong><span>{flight.date ? `${formatShortDate(flight.date, true)} · One-way` : flight.time}</span><p>{flight.detail}</p></div><a href={flight.href} target="_blank" rel="noreferrer" aria-label={`${flight.label} ${flight.route}${flight.date ? ` on ${formatShortDate(flight.date, true)}, one-way` : ''}`}>{flight.label}</a></article>)}

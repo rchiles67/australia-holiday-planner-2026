@@ -10,7 +10,7 @@ import { scenarios as seedDirections, seedBookmarks, seedIdeas } from './data.js
 import { buildSchedule } from './schedule.js'
 
 const STORAGE_KEY = 'drift-australia-2026-v1'
-const DATA_VERSION = 14
+const DATA_VERSION = 15
 const seedIdeaById = new Map(seedIdeas.map((idea) => [idea.id, idea]))
 const seedGalleryIds = new Set(seedIdeas.flatMap((idea) => (idea.gallery || []).map((image) => image.id)))
 const seedBookmarkById = new Map(seedBookmarks.map((bookmark) => [bookmark.id, bookmark]))
@@ -25,6 +25,12 @@ const V5_SEED_REFRESH_FIELDS = ['name', 'region', 'summary', 'color', 'coordinat
 const V13_UPDATED_DIRECTION_IDS = new Set(['wa-tas-sydney'])
 const V14_UPDATED_DIRECTION_IDS = new Set(['wa-south-kimberley'])
 const V14_KIMBERLEY_ID_PREFIXES = ['kimberley-', 'wa-kimberley-']
+const V15_FLIGHT_INSERTIONS = new Map([
+  ['wa-tas-sydney', [['wa-tas-transit', 'tas-hobart'], ['tas-sydney-transit', 'nsw-sydney']]],
+  ['wa-esperance-tas-sydney', [['wa-tas-transit', 'tas-hobart'], ['tas-sydney-transit', 'nsw-sydney']]],
+  ['wa-tas', [['wa-tas-transit', 'tas-hobart']]],
+  ['wa-vic-sydney', [['perth-melbourne-transit', 'vic-melbourne'], ['melbourne-sydney-transit', 'nsw-sydney']]],
+])
 const VALID_STATUSES = new Set(['included', 'maybe', 'excluded'])
 
 function currentSeedAssetSrc(src) {
@@ -56,6 +62,64 @@ function normaliseDirection(direction, ideas) {
   })
   const plan = Object.fromEntries(ideas.map((idea) => [idea.id, direction.plan?.[idea.id] || ['excluded', idea.days]]))
   return { ...direction, order, plan }
+}
+
+function insertBefore(order, id, targetId) {
+  const next = order.filter((item) => item !== id)
+  const targetIndex = next.indexOf(targetId)
+  next.splice(targetIndex >= 0 ? targetIndex : next.length, 0, id)
+  return next
+}
+
+function upgradeDirectionFlights(direction, ideas) {
+  if (direction.id === 'wa-south-kimberley') return normaliseDirection(seedDirectionById.get(direction.id), ideas)
+  const insertions = V15_FLIGHT_INSERTIONS.get(direction.id)
+  if (!insertions) return normaliseDirection(direction, ideas)
+  let order = [...direction.order]
+  const plan = { ...direction.plan }
+  insertions.forEach(([flightId, targetId]) => {
+    const newlyIncluded = plan[flightId]?.[0] !== 'included'
+    plan[flightId] = ['included', 1]
+    order = insertBefore(order, flightId, targetId)
+    if (newlyIncluded && flightId === 'tas-sydney-transit' && plan.perth?.[0] === 'included' && plan.perth[1] > 1) {
+      plan.perth = ['included', plan.perth[1] - 1]
+    }
+  })
+  return normaliseDirection({ ...direction, order, plan }, ideas)
+}
+
+function refreshV15Idea(idea) {
+  const currentSeed = seedIdeaById.get(idea.id)
+  if (!currentSeed) return idea
+  if (currentSeed.kind === 'flight') {
+    return {
+      ...idea,
+      name: currentSeed.name,
+      routeFrom: currentSeed.routeFrom,
+      routeTo: currentSeed.routeTo,
+      kind: 'flight',
+      region: currentSeed.region,
+      area: currentSeed.area,
+      mapGroup: currentSeed.mapGroup,
+      coordinates: currentSeed.coordinates,
+      mapLabel: currentSeed.mapLabel,
+      summary: currentSeed.summary,
+      days: 1,
+      color: 'flight',
+      image: '',
+      coverImageId: undefined,
+      gallery: [],
+      highlights: currentSeed.highlights,
+      note: currentSeed.note,
+      rationale: currentSeed.rationale,
+      tradeoffs: currentSeed.tradeoffs,
+      season: currentSeed.season,
+    }
+  }
+  if (idea.id === 'kimberley-purnululu') {
+    return { ...idea, ...Object.fromEntries(['name', 'summary', 'days', 'highlights', 'note', 'rationale', 'tradeoffs', 'season'].map((field) => [field, currentSeed[field]])) }
+  }
+  return idea
 }
 
 function ideasForDirection(ideas, direction) {
@@ -125,6 +189,11 @@ function parseImportedPlan(payload) {
     const importedIdeaIds = new Set(importedIdeas.map((idea) => idea.id))
     seedIdeas.filter((idea) => !importedIdeaIds.has(idea.id)).forEach((idea) => importedIdeas.push(idea))
   }
+  if (Number(payload.version || 0) < 15) {
+    importedIdeas = importedIdeas.map(refreshV15Idea)
+    const importedIdeaIds = new Set(importedIdeas.map((idea) => idea.id))
+    seedIdeas.filter((idea) => !importedIdeaIds.has(idea.id)).forEach((idea) => importedIdeas.push(idea))
+  }
 
   const directionIds = new Set()
   let importedDirections = payload.directions.map((direction, index) => {
@@ -164,6 +233,7 @@ function parseImportedPlan(payload) {
     const importedDirectionIds = new Set(importedDirections.map((direction) => direction.id))
     seedDirections.filter((direction) => !importedDirectionIds.has(direction.id)).forEach((direction) => importedDirections.push(normaliseDirection(direction, importedIdeas)))
   }
+  if (Number(payload.version || 0) < 15) importedDirections = importedDirections.map((direction) => upgradeDirectionFlights(direction, importedIdeas))
 
   const appliedDirectionId = importedDirections.some((direction) => direction.id === payload.appliedDirectionId)
     ? payload.appliedDirectionId
@@ -271,7 +341,7 @@ function loadState() {
         mergedIdea.area = currentSeed.area
         mergedIdea.mapGroup = currentSeed.mapGroup
       }
-      return rebindSeedIdeaImages(mergedIdea, currentSeed)
+      return rebindSeedIdeaImages((saved.version || 0) < 15 ? refreshV15Idea(mergedIdea) : mergedIdea, currentSeed)
     })
     seedIdeas.filter((idea) => !savedIds.has(idea.id)).forEach((idea) => ideas.push(idea))
     if ((saved.version || 0) < 6) {
@@ -296,7 +366,7 @@ function loadState() {
       const savedBookmarkIds = new Set(bookmarks.map((bookmark) => bookmark.id))
       seedBookmarks.filter((bookmark) => !savedBookmarkIds.has(bookmark.id)).forEach((bookmark) => bookmarks.push(bookmark))
     }
-    if ((saved.version || 0) < 14) {
+    if ((saved.version || 0) < 15) {
       const savedBookmarkIds = new Set(bookmarks.map((bookmark) => bookmark.id))
       seedBookmarks.filter((bookmark) => !savedBookmarkIds.has(bookmark.id)).forEach((bookmark) => bookmarks.push(bookmark))
     }
@@ -324,6 +394,7 @@ function loadState() {
         .filter((direction) => !savedDirectionIds.has(direction.id))
         .forEach((direction) => directions.push(normaliseDirection(direction, ideas)))
     }
+    if ((saved.version || 0) < 15) directions = directions.map((direction) => upgradeDirectionFlights(direction, ideas))
     const migratedTripLength = (saved.version || 0) < 7 && saved.appliedDirectionId
       ? directions.find((direction) => direction.id === saved.appliedDirectionId)?.days || saved.tripLength
       : saved.tripLength || clean.tripLength
@@ -333,7 +404,7 @@ function loadState() {
       ...clean,
       ...saved,
       version: DATA_VERSION,
-      ideas: (saved.version || 0) < 13 && appliedDirection ? ideasForDirection(ideas, appliedDirection) : ideas,
+      ideas: (saved.version || 0) < 15 && appliedDirection ? ideasForDirection(ideas, appliedDirection) : ideas,
       bookmarks,
       directions,
       appliedDirectionId,
@@ -433,12 +504,12 @@ export default function App() {
   function setEditingDays(id, days) {
     const safeDays = Math.max(1, Math.min(14, days))
     const idea = editingIdeas.find((item) => item.id === id)
-    if (idea && editingDirection) updateDirectionPlan(editingDirection.id, id, [idea.status, safeDays])
+    if (idea && editingDirection) updateDirectionPlan(editingDirection.id, id, [idea.status, idea.kind === 'flight' ? 1 : safeDays])
   }
 
   function updateDays(id, change) {
     const idea = editingIdeas.find((item) => item.id === id)
-    if (idea) setEditingDays(id, idea.days + change)
+    if (idea && idea.kind !== 'flight') setEditingDays(id, idea.days + change)
   }
 
   function reorderDirection(targetDirectionId, sourceId, targetId, targetArea) {
@@ -811,10 +882,10 @@ export default function App() {
       <main className={`workspace view-${activeView} ${ideaDetailOpen ? 'idea-detail-open' : ''}`}>
         <IdeaPanel ideas={editingIdeas} selectedId={selectedId} scheduleById={editingSchedule.byId} onSelect={(id) => selectIdea(id, true)} onStatus={updateStatus} onDays={updateDays} onAdd={openAddIdea} onReorder={(sourceId, targetId, area) => reorderDirection(editingDirection.id, sourceId, targetId, area)} onEdit={openEditIdea} onDelete={deleteIdea} directions={directions} editingDirection={editingDirection} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} />
         <div className="planning-column">
-          {activeView === 'ideas' && ideaDetailOpen && <IdeaDetail idea={selectedIdea} scheduleEntry={editingSchedule.byId.get(selectedIdea.id)} sources={bookmarks} direction={editingDirection} directions={directions} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} onBack={closeIdeaDetail} onStatus={updateStatus} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} onEdit={openEditIdea} onDelete={deleteIdea} />}
+          {activeView === 'ideas' && ideaDetailOpen && <IdeaDetail idea={selectedIdea} scheduleEntry={editingSchedule.byId.get(selectedIdea.id)} sources={bookmarks} direction={editingDirection} directions={directions} onDirectionChange={(id) => { setEditingDirectionId(id); setIdeaDetailOpen(false) }} onDirectionDaysChange={(days) => setDirectionLength(editingDirection.id, days)} onBack={closeIdeaDetail} onStatus={updateStatus} onDays={updateDays} onUpdateField={updateIdeaField} onAddImage={addImage} onRemoveImage={removeImage} onMoveImage={moveImage} onSetCover={setCover} onEdit={openEditIdea} onDelete={deleteIdea} />}
           {activeView === 'compare' && <ComparePanel directions={directions} ideas={previewIdeas} activeId={directionId} onSelect={selectDirection} onAdd={addDirection} onRemove={removeDirection} onMove={moveDirection} onCoverChange={setDirectionCover} />}
         </div>
-        <MapPanel ideas={activeView === 'compare' ? previewIdeas : ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} routeMode={activeView === 'route'} schedule={activeView === 'compare' ? previewSchedule : appliedSchedule} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
+        <MapPanel ideas={activeView === 'compare' ? previewIdeas : ideas} selectedIdea={selectedIdea} onSelect={(id) => selectIdea(id, true)} onReorder={(sourceId, targetId) => reorderDirection(appliedDirectionId, sourceId, targetId)} routeMode={activeView === 'route'} schedule={activeView === 'compare' ? previewSchedule : appliedSchedule} sources={bookmarks} onAddSource={addSource} onDeleteSource={(id) => setBookmarks((current) => current.filter((source) => source.id !== id))} onMoveSource={moveSource} onCheckedSource={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, lastChecked: dateToInput(new Date()) } : source))} onTogglePin={(id) => setBookmarks((current) => current.map((source) => source.id === id ? { ...source, pinned: !source.pinned } : source))} />
       </main>
       {modalOpen && <AddIdeaModal idea={ideas.find((idea) => idea.id === editingId)} areas={areaOptions} initialArea={initialAddArea} onClose={() => { setModalOpen(false); setEditingId(null); setInitialAddArea('') }} onSave={saveIdea} />}
       {transferOpen && <PlanTransferModal onClose={() => setTransferOpen(false)} onExport={exportPlan} onImport={importPlan} onImportPayload={importPlanPayload} plan={currentPlanSnapshot()} />}

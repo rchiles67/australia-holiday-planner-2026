@@ -3,7 +3,7 @@ import { DndContext, PointerSensor, TouchSensor, closestCenter, useSensor, useSe
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { ArrowRight, Check, ChevronDown, CircleHelp, GripVertical, Minus, Pencil, Plus, Trash2, X } from 'lucide-react'
-import { statusLabels } from '../data.js'
+import { ideaDisplayColor, statusLabels } from '../data.js'
 import DirectionStrip from './DirectionStrip.jsx'
 import { scheduleLabel } from '../schedule.js'
 
@@ -22,13 +22,13 @@ function SortableIdea({ idea, selected, scheduleEntry, onSelect, onStatus, onDay
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: idea.id })
   const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 4 : undefined }
   return (
-    <article ref={setNodeRef} style={style} className={`idea-row ${selected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}>
+    <article ref={setNodeRef} style={style} className={`idea-row area-${ideaDisplayColor(idea)} ${selected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}>
       <button type="button" className="drag-hint" aria-label={`Reorder ${idea.name}`} {...attributes} {...listeners}>
         <GripVertical size={16} />
       </button>
       <div className="idea-main">
         {idea.image && <img src={idea.image} alt="" />}
-        {!idea.image && <span className={`idea-swatch ${idea.color}`} />}
+        {!idea.image && <span className={`idea-swatch ${ideaDisplayColor(idea)}`} />}
         <span className="idea-copy"><span className="idea-region">{idea.region}</span><strong>{idea.name}</strong><small>{idea.summary}</small><time>{scheduleLabel(scheduleEntry)}</time></span>
         <button className="detail-cta" type="button" onClick={() => onSelect(idea.id)} aria-label={`View details for ${idea.name}`}>Detail <ArrowRight size={11} /></button>
       </div>

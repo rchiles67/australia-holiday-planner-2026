@@ -306,6 +306,13 @@ h2, h3, p { margin-top: 0; }
 
 .idea-swatch.blue { background: var(--blue-soft); }
 .idea-swatch.coral { background: var(--coral-soft); }
+.idea-swatch.flight { border: 1px solid #151b19; background: white; }
+.idea-row.area-green { border-left: 4px solid #6a9588; }
+.idea-row.area-ochre { border-left: 4px solid var(--ochre); }
+.idea-row.area-violet { border-left: 4px solid var(--violet); }
+.idea-row.area-blue { border-left: 4px solid var(--blue); }
+.idea-row.area-coral { border-left: 4px solid var(--coral); }
+.idea-row.area-flight { border-left: 4px solid #151b19; background: #fff; }
 
 .idea-main > .idea-copy { min-width: 0; }
 
@@ -940,6 +947,14 @@ h2, h3, p { margin-top: 0; }
 .idea-detail-heading > div:first-child > span { color: #81928e; font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .idea-detail-heading h2 { margin: 5px 0 6px; font: 500 29px/1.08 Georgia, Cambria, serif; letter-spacing: -.025em; }
 .idea-detail-heading p { margin: 0; color: #61756f; font-size: 11px; }
+.detail-days-control { flex: 0 0 auto; }
+.flight-day-allowance { min-height: 30px; padding: 0 9px; border: 1px solid #151b19; border-radius: 6px; background: white; color: #151b19; display: inline-flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 750; white-space: nowrap; }
+.flight-detail-card { margin: 0 24px 20px; padding: 22px; border: 1px solid #151b19; border-radius: 10px; background: white; color: #151b19; display: flex; align-items: center; gap: 18px; }
+.flight-detail-card > svg { flex: 0 0 auto; }
+.flight-detail-card span, .flight-detail-card strong { display: block; }
+.flight-detail-card span { margin-bottom: 4px; color: #687873; font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.flight-detail-card strong { font: 500 21px Georgia, Cambria, serif; }
+.flight-detail-card p { max-width: 620px; margin: 7px 0 0; color: #53645f; font-size: 10px; line-height: 1.45; }
 .detail-status { height: 28px; padding: 0 10px; border-radius: 20px; display: grid; place-items: center; font-size: 9px; font-weight: 800; text-transform: capitalize; }
 .detail-status.status-included { background: #edf6f3; color: #245e50; }
 .detail-status.status-maybe { background: #fbf3e3; color: #986516; }
@@ -1253,6 +1268,9 @@ h2, h3, p { margin-top: 0; }
 .journey-block strong, .journey-block span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .journey-block strong { font: 500 10px Georgia, Cambria, serif; }.journey-block span { margin-top: 2px; font-size: 7px; opacity: .8; }
 .journey-block.ochre { border-color: #d49b40; background: var(--ochre-soft); color: #77501a; }.journey-block.violet { border-color: #9586b2; background: var(--violet-soft); color: #594a76; }.journey-block.blue { border-color: #6da0ba; background: var(--blue-soft); color: #2d6680; }.journey-block.coral { border-color: #da9186; background: var(--coral-soft); color: #8d4c43; }
+.journey-block.flight { border-color: #151b19; background: #fff; color: #151b19; }
+.journey-block.dragging { z-index: 6; opacity: .68; cursor: grabbing; box-shadow: 0 8px 18px rgba(20,35,31,.2); }
+.journey-block.drop-target { outline: 2px solid #315f55; outline-offset: 2px; }
 .journey-block.provisional { border-style: dashed; opacity: .78; }
 .journey-block.continues-before { border-left-style: dashed; border-radius: 0 6px 6px 0; }.journey-block.continues-after { border-right-style: dashed; border-radius: 6px 0 0 6px; }.journey-block.continues-before.continues-after { border-radius: 0; }
 .journey-sequence { display: none; }

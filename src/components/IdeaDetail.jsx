@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft, ArrowRight, Check, CircleHelp, Clipboard, ExternalLink, ImagePlus, Link, Pencil, Star, Trash2, Upload, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, CircleHelp, Clipboard, ExternalLink, ImagePlus, Link, Minus, Pencil, Plane, Plus, Star, Trash2, Upload, X } from 'lucide-react'
 import { statusLabels } from '../data.js'
 import DirectionStrip from './DirectionStrip.jsx'
 import { scheduleLabel } from '../schedule.js'
@@ -28,7 +28,7 @@ function readAndResizeImage(file) {
   })
 }
 
-export default function IdeaDetail({ idea, scheduleEntry, sources, direction, directions, onDirectionChange, onDirectionDaysChange, onBack, onStatus, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover, onEdit, onDelete }) {
+export default function IdeaDetail({ idea, scheduleEntry, sources, direction, directions, onDirectionChange, onDirectionDaysChange, onBack, onStatus, onDays, onUpdateField, onAddImage, onRemoveImage, onMoveImage, onSetCover, onEdit, onDelete }) {
   const [activeImageId, setActiveImageId] = useState(idea.gallery?.[0]?.id || null)
   const [message, setMessage] = useState('')
   const fileInput = useRef(null)
@@ -130,12 +130,27 @@ export default function IdeaDetail({ idea, scheduleEntry, sources, direction, di
               return <button key={status} type="button" className={`status-${status} ${idea.status === status ? 'active' : ''}`} aria-pressed={idea.status === status} onClick={() => onStatus(idea.id, status)}><Icon size={12} />{label}</button>
             })}
           </div>
+          {idea.kind === 'flight' ? (
+            <div className="flight-day-allowance"><Plane size={13} /> 1 day allowance</div>
+          ) : (
+            <div className="days-control detail-days-control">
+              <span>Days</span>
+              <button type="button" onClick={() => onDays(idea.id, -1)} aria-label={`Remove a day from ${idea.name}`}><Minus size={13} /></button>
+              <output>{idea.days}</output>
+              <button type="button" onClick={() => onDays(idea.id, 1)} aria-label={`Add a day to ${idea.name}`}><Plus size={13} /></button>
+            </div>
+          )}
           <button type="button" onClick={() => onEdit(idea.id)}><Pencil size={13} /> Edit idea</button>
           <button type="button" className="danger" onClick={() => onDelete(idea.id)}><Trash2 size={13} /> Delete</button>
         </div>
       </header>
 
-      <div className="gallery-shell">
+      {idea.kind === 'flight' ? (
+        <div className="flight-detail-card">
+          <Plane size={30} />
+          <div><span>Flight planning block</span><strong>{idea.routeFrom} → {idea.routeTo}</strong><p>One full calendar day is reserved for the flight, airport and vehicle logistics. This says nothing about cabin class or a confirmed booking.</p></div>
+        </div>
+      ) : <div className="gallery-shell">
         {activeImage ? (
           <>
             <div className="gallery-hero">
@@ -176,7 +191,7 @@ export default function IdeaDetail({ idea, scheduleEntry, sources, direction, di
           <button type="button" onClick={addImageUrl}><Link size={14} /> Add URL</button>
           <small>{message || 'Personal additions save in this browser until Codex publishes an update.'}</small>
         </div>
-      </div>
+      </div>}
 
       <div className="idea-detail-grid">
         <section>

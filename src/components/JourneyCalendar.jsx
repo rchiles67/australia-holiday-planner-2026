@@ -1,4 +1,7 @@
 import { CalendarDays, Plane } from 'lucide-react'
+import { DndContext, PointerSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
+import { ideaDisplayColor } from '../data.js'
 import { formatShortDate } from '../schedule.js'
 
 function travelGroup(idea) {
@@ -23,9 +26,41 @@ function weekFragments(entry, tripLength) {
   return fragments
 }
 
-export default function JourneyCalendar({ schedule, onSelect }) {
+function JourneyBlock({ entry, week, column, span, continuesBefore, continuesAfter, onSelect }) {
+  const dragId = `calendar-drag-${entry.id}-${week}`
+  const dropId = `calendar-drop-${entry.id}-${week}`
+  const draggable = useDraggable({ id: dragId, data: { ideaId: entry.id } })
+  const droppable = useDroppable({ id: dropId, data: { ideaId: entry.id } })
+  const setNodeRef = (node) => {
+    draggable.setNodeRef(node)
+    droppable.setNodeRef(node)
+  }
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      className={`journey-block ${ideaDisplayColor(entry)} ${entry.provisional ? 'provisional' : ''} ${continuesBefore ? 'continues-before' : ''} ${continuesAfter ? 'continues-after' : ''} ${draggable.isDragging ? 'dragging' : ''} ${droppable.isOver ? 'drop-target' : ''}`}
+      style={{ gridColumn: `${column} / span ${span}`, transform: CSS.Translate.toString(draggable.transform) }}
+      onClick={() => onSelect(entry.id)}
+      title={`${entry.name}: ${formatShortDate(entry.startDate)}–${formatShortDate(entry.endDate)} · drag to reorder`}
+      {...draggable.attributes}
+      {...draggable.listeners}
+    >
+      <strong>{entry.name}</strong><span>{formatShortDate(entry.startDate)}–{formatShortDate(entry.endDate)}</span>
+    </button>
+  )
+}
+
+export default function JourneyCalendar({ schedule, onSelect, onReorder }) {
   const weeks = Array.from({ length: Math.ceil(schedule.tripLength / 7) }, (_, index) => index)
   const fragments = schedule.entries.flatMap((entry) => weekFragments(entry, schedule.tripLength).map((fragment) => ({ entry, ...fragment })))
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 220, tolerance: 8 } }))
+
+  function dragEnd({ active, over }) {
+    const sourceId = active.data.current?.ideaId
+    const targetId = over?.data.current?.ideaId
+    if (sourceId && targetId && sourceId !== targetId) onReorder?.(sourceId, targetId)
+  }
 
   return (
     <section className="journey-calendar">
@@ -33,6 +68,7 @@ export default function JourneyCalendar({ schedule, onSelect }) {
         <div><CalendarDays size={18} /><span><strong>Dated journey</strong><small>{formatShortDate(schedule.tripStart)} – {formatShortDate(schedule.tripEnd, true)}</small></span></div>
         <span className={`allocation-state ${schedule.remaining < 0 ? 'over' : ''}`}>{schedule.allocated} of {schedule.tripLength} days planned</span>
       </header>
+      <DndContext sensors={sensors} onDragEnd={dragEnd}>
       <div className="journey-weeks">
         {weeks.map((week) => {
           const weekStart = week * 7
@@ -43,27 +79,17 @@ export default function JourneyCalendar({ schedule, onSelect }) {
               <div className="journey-week-label"><strong>Week {week + 1}</strong><span>{formatShortDate(new Date(schedule.tripStart.getTime() + weekStart * 86400000))}–{formatShortDate(new Date(schedule.tripStart.getTime() + weekEnd * 86400000))}</span></div>
               <div className="journey-week-grid">
                 {Array.from({ length: 7 }, (_, day) => <span key={day} className={`journey-day ${weekStart + day >= schedule.tripLength ? 'outside' : ''}`}>{weekStart + day < schedule.tripLength ? weekStart + day + 1 : ''}</span>)}
-                {weekEntries.map(({ entry, column, span, continuesBefore, continuesAfter }) => (
-                  <button
-                    key={`${entry.id}-${week}`}
-                    type="button"
-                    className={`journey-block ${entry.color || 'green'} ${entry.provisional ? 'provisional' : ''} ${continuesBefore ? 'continues-before' : ''} ${continuesAfter ? 'continues-after' : ''}`}
-                    style={{ gridColumn: `${column} / span ${span}` }}
-                    onClick={() => onSelect(entry.id)}
-                    title={`${entry.name}: ${formatShortDate(entry.startDate)}–${formatShortDate(entry.endDate)}`}
-                  >
-                    <strong>{entry.name}</strong><span>{formatShortDate(entry.startDate)}–{formatShortDate(entry.endDate)}</span>
-                  </button>
-                ))}
+                {weekEntries.map((fragment) => <JourneyBlock key={`${fragment.entry.id}-${week}`} {...fragment} onSelect={onSelect} />)}
               </div>
             </section>
           )
         })}
       </div>
+      </DndContext>
       <div className="journey-sequence" aria-label="Journey sequence">
         {schedule.entries.map((entry, index) => {
           const previous = schedule.entries[index - 1]
-          const transfer = previous && travelGroup(previous) !== travelGroup(entry)
+          const transfer = previous && previous.kind !== 'flight' && entry.kind !== 'flight' && travelGroup(previous) !== travelGroup(entry)
           return (
             <div key={entry.id}>
               {transfer && <div className="journey-transfer"><Plane size={13} /> Transfer to {travelGroup(entry)}</div>}

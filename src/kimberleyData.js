@@ -11,15 +11,24 @@ const photo = (id, file, caption, credit, license, sourceUrl) => ({
 
 export const kimberleyIdeas = [
   {
-    id: 'wa-kimberley-transit', name: 'Perth ↔ Kununurra transit', region: 'Western Australia', area: 'The Kimberley', mapGroup: 'The Kimberley',
-    summary: 'Flights in and out replace more than 2,200 kilometres of road each way.', days: 2, status: 'excluded', color: 'coral',
-    image: commons('Mirima National Park.JPG'), coverImageId: 'kimberley-transit-mirima', coordinates: [128.74, -15.773], mapLabel: 'Kununurra flight', hideMapMarker: true,
-    highlights: ['Fly between Perth and Kununurra', 'Allow one calendar day for each regional transfer', 'Keep the East Kimberley section at the start of the holiday'],
+    id: 'wa-kimberley-transit', name: 'Perth → Kununurra flight', routeFrom: 'Perth', routeTo: 'Kununurra', kind: 'flight', region: 'Flight', area: 'Flights & transfers', mapGroup: 'Flights',
+    summary: 'A dedicated one-day flight and airport allowance between southern WA and the East Kimberley.', days: 1, status: 'excluded', color: 'flight',
+    image: '', coordinates: [128.74, -15.773], mapLabel: 'Perth → Kununurra', hideMapMarker: true, gallery: [],
+    highlights: ['Fly between Perth and Kununurra', 'Allow a calendar day for airport and vehicle logistics', 'Confirm the late-season operating day'],
     note: 'Late-October flight frequency may be lower than in the main dry season, so build the direction around confirmed operating days.',
     tradeoffs: 'Flying avoids an impractical multi-day road transfer but creates a second vehicle hire and constrains the route to airline operating days.',
     season: 'Place this module as close as possible to 26 October, before more tours and park facilities finish for the season.',
-    rationale: 'Two visible transit days prevent the Kimberley option from appearing to provide seven full touring days from a seven-day allocation.',
-    gallery: [photo('kimberley-transit-mirima', 'Mirima National Park.JPG', 'Mirima National Park beside Kununurra', 'Steven Marshall / Cardboardbird', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Mirima_National_Park.JPG')],
+    rationale: 'A visible one-day block prevents the outbound regional flight from looking like part of a scenic stay.',
+  },
+  {
+    id: 'kimberley-perth-transit', name: 'Kununurra → Perth flight', routeFrom: 'Kununurra', routeTo: 'Perth', kind: 'flight', region: 'Flight', area: 'Flights & transfers', mapGroup: 'Flights',
+    summary: 'A dedicated one-day return flight and airport allowance after the East Kimberley road section.', days: 1, status: 'excluded', color: 'flight',
+    image: '', coordinates: [115.967, -31.94], mapLabel: 'Kununurra → Perth', hideMapMarker: true, gallery: [],
+    highlights: ['Return the Kimberley hire car', 'Allow for airport and baggage time', 'Connect onward from Perth only with a safe margin'],
+    note: 'This is a planning allowance, not a cabin-class choice or a confirmed booking.',
+    tradeoffs: 'Late-season frequency can constrain the final Kimberley day and onward arrangements.',
+    season: 'Confirm the operating date before fixing the last Kununurra night.',
+    rationale: 'Separating the return flight keeps the two regional transfers on their true dates.',
   },
   {
     id: 'kimberley-kununurra', name: 'Kununurra & Mirima', region: 'East Kimberley WA', area: 'The Kimberley', mapGroup: 'The Kimberley',
@@ -51,13 +60,13 @@ export const kimberleyIdeas = [
   },
   {
     id: 'kimberley-purnululu', name: 'Purnululu & the Bungle Bungles', region: 'East Kimberley WA', area: 'The Kimberley', mapGroup: 'The Kimberley',
-    summary: 'World Heritage striped domes and immense gorges, made practical by a scenic flight.', days: 1, status: 'excluded', color: 'coral',
+    summary: 'World Heritage striped domes and immense gorges reached as a demanding high-clearance 4WD excursion.', days: 3, status: 'excluded', color: 'coral',
     image: commons('Bungle Bungles.jpg'), coverImageId: 'kimberley-bungles-aerial', coordinates: [128.4, -17.48], mapLabel: 'Purnululu',
-    highlights: ['Two-hour fixed-wing flight from Kununurra', 'Aerial view of the domes, Piccaninny Gorge and the full range', 'Fly-in Cathedral Gorge walk only if late-season operations continue'],
-    note: 'Treat the aerial circuit as the dependable core. Add a ground landing only after confirming park, airstrip, operator and temperature.',
-    tradeoffs: 'A flight is expensive, but avoids a 304-kilometre approach and the final rough 53-kilometre 4WD track.',
+    highlights: ['High-clearance 4WD approach from Kununurra', 'Cathedral Gorge, the Domes and Piccaninny Creek', 'A second park sector only if heat, roads and time permit'],
+    note: 'Plan this as a drive only after confirming the park, Spring Creek Track, campground and vehicle-hire conditions immediately before travel.',
+    tradeoffs: 'The park is 304 kilometres from Kununurra and the final 53-kilometre 4WD track can take several hours; late-season heat and storms can close access.',
     season: 'The park may remain open into November, weather permitting, but visitor facilities and daily tours are concentrated from April to October.',
-    rationale: 'This is the East Kimberley experience most likely to justify the extra domestic flight and should not be omitted from the comparison.',
+    rationale: 'Three days allows the long approach, at least one night near the range and a safer return without pretending this is a Kununurra day trip.',
     gallery: [
       photo('kimberley-bungles-aerial', 'Bungle Bungles.jpg', 'Aerial view of the Bungle Bungle Range', 'Nichollas Harrison', 'CC BY-SA 4.0', 'https://commons.wikimedia.org/wiki/File:Bungle_Bungles.jpg'),
       photo('kimberley-domes-walk', 'The Domes Walk, Purnululu National Park.jpg', 'The Domes Walk in Purnululu National Park', 'Graeme Churchard', 'See source page', 'https://commons.wikimedia.org/wiki/File:The_Domes_Walk,_Purnululu_National_Park.jpg'),
@@ -112,13 +121,13 @@ export const kimberleyIdeas = [
 export const kimberleyDirection = {
   id: 'wa-south-kimberley', name: 'Southern WA + the Kimberley', days: 28, pace: 'Two contrasting WA regions, deliberately buffered',
   transit: 'Return regional flights + two separate WA road sections', image: commons('Bungle Bungles.jpg'),
-  summary: 'A two-centre WA trip: late-season East Kimberley first, then the gentler spring coast and forests of southern WA.',
-  pros: ['Puts the most seasonal region first', 'Purnululu remains flight-led and weather-dependent', 'El Questro and Mitchell Falls are explicitly excluded'],
-  order: ['wa-kimberley-transit', 'kimberley-kununurra', 'kimberley-lake-argyle', 'kimberley-purnululu', 'kimberley-wyndham-parry', 'kimberley-swimming-holes', 'perth', 'margaret-river', 'southern-forests', 'wa-denmark-albany'],
+  summary: 'A two-centre WA trip: a south-coast drive through Esperance first, then a late-season East Kimberley road section.',
+  pros: ['Esperance replaces Margaret River', 'Both regional flights have visible calendar days', 'Purnululu is allowed three days for the 4WD journey'],
+  order: ['perth', 'southern-forests', 'wa-denmark-albany', 'wa-bremer-fitzgerald', 'esperance', 'wa-hyden-return', 'wa-kimberley-transit', 'kimberley-kununurra', 'kimberley-lake-argyle', 'kimberley-purnululu', 'kimberley-wyndham-parry', 'kimberley-swimming-holes', 'kimberley-perth-transit'],
   choices: {
-    'wa-kimberley-transit': ['included', 2], 'kimberley-kununurra': ['included', 4], 'kimberley-lake-argyle': ['included', 3],
-    'kimberley-purnululu': ['included', 1], 'kimberley-wyndham-parry': ['included', 1], 'kimberley-swimming-holes': ['included', 2],
-    perth: ['included', 4], 'margaret-river': ['included', 4], 'southern-forests': ['included', 3], 'wa-denmark-albany': ['included', 4],
+    perth: ['included', 3], 'southern-forests': ['included', 2], 'wa-denmark-albany': ['included', 3], 'wa-bremer-fitzgerald': ['included', 1], esperance: ['included', 3], 'wa-hyden-return': ['included', 1],
+    'wa-kimberley-transit': ['included', 1], 'kimberley-kununurra': ['included', 4], 'kimberley-lake-argyle': ['included', 3],
+    'kimberley-purnululu': ['included', 3], 'kimberley-wyndham-parry': ['included', 1], 'kimberley-swimming-holes': ['included', 2], 'kimberley-perth-transit': ['included', 1],
   },
 }
 

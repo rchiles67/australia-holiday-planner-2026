@@ -1,4 +1,5 @@
 import { kimberleyBookmarks, kimberleyDirection, kimberleyIdeas } from './kimberleyData.js'
+import { flightIdeas } from './flightData.js'
 
 const asset = (name) => `${import.meta.env.BASE_URL}images/${name}`
 
@@ -15,6 +16,24 @@ export const statusLabels = {
   included: 'Include',
   maybe: 'Maybe',
   excluded: 'Exclude',
+}
+
+const knownAreaColors = new Map([
+  ['Flights & transfers', 'flight'],
+  ['Perth & Western Australia', 'ochre'],
+  ['The Kimberley', 'coral'],
+  ['Tasmania', 'violet'],
+  ['Sydney & New South Wales', 'blue'],
+  ['Melbourne & Victoria', 'green'],
+])
+const fallbackAreaColors = ['green', 'ochre', 'violet', 'blue', 'coral']
+
+export function ideaDisplayColor(idea) {
+  if (idea?.kind === 'flight') return 'flight'
+  const area = idea?.area || idea?.region || 'Other ideas'
+  if (knownAreaColors.has(area)) return knownAreaColors.get(area)
+  const hash = Array.from(area).reduce((total, character) => total + character.charCodeAt(0), 0)
+  return fallbackAreaColors[hash % fallbackAreaColors.length]
 }
 
 export const seedIdeas = [
@@ -91,15 +110,14 @@ export const seedIdeas = [
     gallery: [galleryImage('wave-rock', 'wave-rock.jpg', 'Wave Rock near Hyden', 'Brian W. Schaller', 'Free Art License', 'https://commons.wikimedia.org/wiki/File:A198,_Hyden,_Western_Australia,_Wave_Rock,_2007.JPG')],
   },
   {
-    id: 'wa-tas-transit', name: 'WA → Tasmania transit', region: 'Western Australia', area: 'Perth & Western Australia',
-    summary: 'Return the car, reach Perth Airport and fly east to Hobart.', days: 1, status: 'excluded', color: 'green',
-    image: asset('perth.jpg'), coverImageId: 'transit-perth', coordinates: [115.967, -31.94], mapLabel: 'Perth Airport',
-    highlights: ['Make the Albany–Perth return explicit', 'Protect the domestic flight connection', 'Treat relocation as a calendar day'],
+    id: 'wa-tas-transit', name: 'Perth → Hobart flight', routeFrom: 'Perth', routeTo: 'Hobart', kind: 'flight', region: 'Flight', area: 'Flights & transfers', mapGroup: 'Flights',
+    summary: 'A one-day domestic transfer from the WA road trip to Tasmania.', days: 1, status: 'excluded', color: 'flight',
+    image: '', coordinates: [147.3272, -42.8821], mapLabel: 'Perth → Hobart', gallery: [],
     note: 'This is intentionally a visible itinerary card: the route is only realistic if the final WA drive, car return and flight are allowed for.',
     tradeoffs: 'A same-day chain may be tiring; a Perth airport night is the safer fallback if flight timings do not align.',
     season: 'Check the actual Perth–Hobart schedule before fixing accommodation or car returns.',
     rationale: 'One calendar day prevents the WA-to-Tasmania seam from disappearing between scenic cards.',
-    gallery: [galleryImage('transit-perth', 'perth.jpg', 'Perth, the domestic flight gateway', 'Robert Young', 'CC BY 2.0', 'https://commons.wikimedia.org/wiki/File:Perth_skyline.jpg')],
+    highlights: ['Return the WA hire car', 'Allow for airport and baggage time', 'Collect the Tasmania car after arrival'],
   },
   {
     id: 'esperance', name: 'Esperance extension', region: 'Western Australia', area: 'Perth & Western Australia',
@@ -303,6 +321,7 @@ export const seedIdeas = [
     gallery: [galleryImage('royal-coast', 'royal-national-park.jpg', 'The Coast Walk, Royal National Park', 'Alex Proimos', 'CC BY 2.0', 'https://commons.wikimedia.org/wiki/File:Bushland,_Royal_National_Park,_The_Coast_Walk,_NSW_Australia_(4045437811).jpg')],
   },
   ...kimberleyIdeas,
+  ...flightIdeas,
 ]
 
 const directionPlan = (choices) => Object.fromEntries(seedIdeas.map((idea) => [idea.id, choices[idea.id] || ['excluded', idea.days]]))
@@ -313,27 +332,29 @@ export const scenarios = [
     id: 'wa-tas-sydney', name: 'WA + Tasmania + Sydney', days: 28, pace: 'Full, scenery-led', transit: '2 domestic flights + WA and Tasmania road sections',
     image: asset('sydney-harbour.jpg'), summary: 'A realistic South West loop, Tasmania’s strongest landscapes and a Sydney departure buffer—all within 28 calendar days.',
     pros: ['Every relocation day is visible', 'Three days each for the Capes and Denmark–Albany coast', 'Sydney remains both a scenic finish and UK departure gateway'],
-    order: ['perth', 'margaret-river', 'southern-forests', 'wa-denmark-albany', 'wa-tas-transit', 'tas-hobart', 'tas-peninsula', 'tas-east', 'tas-bay-fires', 'tas-north', 'tas-highlands', 'tas-west', 'tas-lake-st-clair-return', 'nsw-sydney', 'nsw-blue'],
-    plan: directionPlan({ perth: ['included', 3], 'margaret-river': ['included', 3], 'southern-forests': ['included', 2], 'wa-denmark-albany': ['included', 3], 'wa-tas-transit': ['included', 1], 'tas-hobart': ['included', 2], 'tas-peninsula': ['included', 1], 'tas-east': ['included', 2], 'tas-bay-fires': ['included', 1], 'tas-north': ['included', 1], 'tas-highlands': ['included', 3], 'tas-west': ['included', 2], 'tas-lake-st-clair-return': ['included', 1], 'nsw-sydney': ['included', 2], 'nsw-blue': ['included', 1] }),
+    order: ['perth', 'margaret-river', 'southern-forests', 'wa-denmark-albany', 'wa-tas-transit', 'tas-hobart', 'tas-peninsula', 'tas-east', 'tas-bay-fires', 'tas-north', 'tas-highlands', 'tas-west', 'tas-lake-st-clair-return', 'tas-sydney-transit', 'nsw-sydney', 'nsw-blue'],
+    plan: directionPlan({ perth: ['included', 2], 'margaret-river': ['included', 3], 'southern-forests': ['included', 2], 'wa-denmark-albany': ['included', 3], 'wa-tas-transit': ['included', 1], 'tas-hobart': ['included', 2], 'tas-peninsula': ['included', 1], 'tas-east': ['included', 2], 'tas-bay-fires': ['included', 1], 'tas-north': ['included', 1], 'tas-highlands': ['included', 3], 'tas-west': ['included', 2], 'tas-lake-st-clair-return': ['included', 1], 'tas-sydney-transit': ['included', 1], 'nsw-sydney': ['included', 2], 'nsw-blue': ['included', 1] }),
   },
   {
     id: 'wa-esperance-tas-sydney', name: 'WA with Esperance + Tasmania highlights + Sydney', days: 28, pace: 'Driving-heavy, selective Tasmania', transit: '2 domestic flights + a long WA south-coast road trip',
     image: asset('lucky-bay.jpg'), summary: 'Keep Esperance by trimming Tasmania to its strongest highland and west-coast modules.',
     pros: ['Cape Le Grand stays in the trip', 'Bremer Bay breaks the eastward drive', 'Sydney still protects the UK departure'],
-    order: ['perth', 'margaret-river', 'southern-forests', 'wa-denmark-albany', 'wa-bremer-fitzgerald', 'esperance', 'wa-tas-transit', 'tas-hobart', 'tas-peninsula', 'tas-east', 'tas-highlands', 'tas-west', 'tas-lake-st-clair-return', 'nsw-sydney', 'nsw-blue'],
-    plan: directionPlan({ perth: ['included', 3], 'margaret-river': ['included', 2], 'southern-forests': ['included', 2], 'wa-denmark-albany': ['included', 3], 'wa-bremer-fitzgerald': ['included', 1], esperance: ['included', 3], 'wa-tas-transit': ['included', 1], 'tas-hobart': ['included', 2], 'tas-peninsula': ['included', 1], 'tas-east': ['included', 2], 'tas-highlands': ['included', 2], 'tas-west': ['included', 2], 'tas-lake-st-clair-return': ['included', 1], 'nsw-sydney': ['included', 2], 'nsw-blue': ['included', 1] }),
+    order: ['perth', 'margaret-river', 'southern-forests', 'wa-denmark-albany', 'wa-bremer-fitzgerald', 'esperance', 'wa-tas-transit', 'tas-hobart', 'tas-peninsula', 'tas-east', 'tas-highlands', 'tas-west', 'tas-lake-st-clair-return', 'tas-sydney-transit', 'nsw-sydney', 'nsw-blue'],
+    plan: directionPlan({ perth: ['included', 2], 'margaret-river': ['included', 2], 'southern-forests': ['included', 2], 'wa-denmark-albany': ['included', 3], 'wa-bremer-fitzgerald': ['included', 1], esperance: ['included', 3], 'wa-tas-transit': ['included', 1], 'tas-hobart': ['included', 2], 'tas-peninsula': ['included', 1], 'tas-east': ['included', 2], 'tas-highlands': ['included', 2], 'tas-west': ['included', 2], 'tas-lake-st-clair-return': ['included', 1], 'tas-sydney-transit': ['included', 1], 'nsw-sydney': ['included', 2], 'nsw-blue': ['included', 1] }),
   },
   {
     id: 'wa-tas', name: 'WA + full Tasmania', days: 28, pace: 'Varied, slower island loop', transit: '1 domestic flight + WA and Tasmania road sections',
     image: asset('cradle-boatshed.jpg'), summary: 'Use the extra time for Stanley and a less compressed anti-clockwise Tasmania circuit.',
     pros: ['Strongest Tasmania coverage', 'Uses every scenery module from the source notes', 'Only one domestic flight seam'],
-    plan: directionPlan({ perth: ['included', 2], 'margaret-river': ['included', 4], 'southern-forests': ['included', 3], 'tas-hobart': ['included', 2], 'tas-peninsula': ['included', 2], 'tas-east': ['included', 2], 'tas-bay-fires': ['included', 2], 'tas-north': ['included', 2], 'tas-stanley': ['maybe', 2], 'tas-highlands': ['included', 3], 'tas-west': ['included', 4] }),
+    order: ['perth', 'margaret-river', 'southern-forests', 'wa-tas-transit', 'tas-hobart', 'tas-peninsula', 'tas-east', 'tas-bay-fires', 'tas-north', 'tas-stanley', 'tas-highlands', 'tas-west'],
+    plan: directionPlan({ perth: ['included', 2], 'margaret-river': ['included', 4], 'southern-forests': ['included', 3], 'wa-tas-transit': ['included', 1], 'tas-hobart': ['included', 2], 'tas-peninsula': ['included', 2], 'tas-east': ['included', 2], 'tas-bay-fires': ['included', 2], 'tas-north': ['included', 2], 'tas-stanley': ['maybe', 2], 'tas-highlands': ['included', 3], 'tas-west': ['included', 4] }),
   },
   {
     id: 'wa-vic-sydney', name: 'WA + Victoria + Sydney', days: 28, pace: 'Three distinct road trips', transit: '2 domestic flights + separate Victoria drives',
     image: asset('great-ocean-road.jpg'), summary: 'Replace Tasmania with Esperance, Victoria’s two strongest coastal landscapes and a Sydney finish.',
     pros: ['No alpine Tasmania weather dependency', 'Great Ocean Road and Wilsons Prom are strong standalone modules', 'Sydney remains the departure gateway'],
-    plan: directionPlan({ perth: ['included', 2], 'margaret-river': ['included', 4], 'southern-forests': ['included', 3], esperance: ['maybe', 4], 'vic-melbourne': ['included', 2], 'vic-great-ocean': ['included', 4], 'vic-prom': ['included', 3], 'nsw-sydney': ['included', 3], 'nsw-blue': ['included', 2], 'nsw-royal': ['included', 1] }),
+    order: ['perth', 'margaret-river', 'southern-forests', 'perth-melbourne-transit', 'vic-melbourne', 'vic-great-ocean', 'vic-prom', 'melbourne-sydney-transit', 'nsw-sydney', 'nsw-blue', 'nsw-royal'],
+    plan: directionPlan({ perth: ['included', 2], 'margaret-river': ['included', 4], 'southern-forests': ['included', 3], esperance: ['maybe', 4], 'perth-melbourne-transit': ['included', 1], 'vic-melbourne': ['included', 2], 'vic-great-ocean': ['included', 4], 'vic-prom': ['included', 3], 'melbourne-sydney-transit': ['included', 1], 'nsw-sydney': ['included', 3], 'nsw-blue': ['included', 2], 'nsw-royal': ['included', 1] }),
   },
   {
     id: 'wa-deeper', name: 'WA deeper', days: 25, pace: 'Road-trip focused', transit: 'No domestic flight until the return connection',
@@ -346,7 +367,7 @@ export const scenarios = [
 export const flightNotes = [
   { id: 'london-perth', route: 'London → Perth', from: 'London', to: 'Perth', time: 'Long-haul · live search', detail: 'Compare one-ticket itineraries and leave the first day gentle after the overnight journey.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20London%20to%20Perth%20October%202026', label: 'Search' },
   { id: 'perth-kununurra', route: 'Perth → Kununurra', from: 'Perth', to: 'Kununurra', time: 'Regional flight', detail: 'Confirm the late-October operating day before fixing the East Kimberley accommodation sequence.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Perth%20to%20Kununurra%20October%202026', label: 'Check dates' },
-  { id: 'kununurra-perth', route: 'Kununurra → Perth', from: 'Kununurra', to: 'Perth', time: 'Regional flight', detail: 'Return to Perth before collecting the southern-WA hire car; schedules may be less frequent late in the season.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Kununurra%20to%20Perth%20November%202026', label: 'Check dates' },
+  { id: 'kununurra-perth', route: 'Kununurra → Perth', from: 'Kununurra', to: 'Perth', time: 'Regional flight', detail: 'Return the Kimberley hire car and allow a safe margin before any onward Perth or London connection; schedules may be less frequent late in the season.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Kununurra%20to%20Perth%20November%202026', label: 'Check dates' },
   { id: 'perth-hobart', route: 'Perth → Hobart', from: 'Perth', to: 'Hobart', time: 'Direct or one stop', detail: 'Direct service can be limited, so compare the exact date against connections via Melbourne.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Perth%20to%20Hobart%20November%202026', label: 'Check dates' },
   { id: 'perth-hobart-fallback', route: 'Perth → Melbourne → Hobart', from: 'Perth', to: 'Hobart', via: 'Melbourne', time: 'One-stop fallback', detail: 'A practical fallback if a direct day does not fit. Keep a generous connection on separate tickets.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Perth%20to%20Hobart%20via%20Melbourne%20November%202026', label: 'Compare' },
   { id: 'perth-melbourne', route: 'Perth → Melbourne', from: 'Perth', to: 'Melbourne', time: 'Domestic flight', detail: 'Use when Victoria follows WA; compare arriving early enough to avoid losing the following road-trip day.', href: 'https://www.google.com/travel/flights?q=Flights%20from%20Perth%20to%20Melbourne%20November%202026', label: 'Compare' },
