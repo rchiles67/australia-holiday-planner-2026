@@ -704,14 +704,14 @@ h2, h3, p { margin-top: 0; }
 .map-marker.blue { fill: var(--blue); }
 .map-marker.coral { fill: var(--coral); }
 .map-marker-hit { fill: transparent; cursor: pointer; }
-.maybe-marker .map-marker { stroke: white; stroke-width: 1.25; }
+.maybe-marker .map-marker { fill: white; stroke: var(--ochre); stroke-width: 2; }
 .active-marker:not(.maybe-marker) .map-marker { r: 4.8px; stroke-width: 2; filter: drop-shadow(0 1px 2px rgba(20,50,44,.3)); }
-.active-marker.maybe-marker .map-marker { r: 3.4px; stroke: #c08729; stroke-width: 1.5; filter: drop-shadow(0 1px 2px rgba(20,50,44,.3)); }
+.active-marker.maybe-marker .map-marker { r: 4.8px; stroke: #c08729; stroke-width: 2.2; filter: drop-shadow(0 1px 2px rgba(20,50,44,.3)); }
 .map-legend { position: absolute; left: 12px; bottom: 10px; padding: 7px 9px; border: 1px solid rgba(195,211,207,.88); border-radius: 7px; background: rgba(255,255,255,.9); display: flex; flex-wrap: wrap; gap: 7px; font-size: 8px; color: #60756f; }
 .legend-line { width: 14px; display: inline-block; margin: 0 4px 2px 0; vertical-align: middle; border-top: 2px solid; }
 .legend-dot { display: inline-block; margin: 0 4px 0 0; border-radius: 50%; vertical-align: middle; }
-.legend-dot.included { width: 9px; height: 9px; background: #4b7d6e; border: 1px solid white; box-shadow: 0 0 0 1px #4b7d6e; }
-.legend-dot.maybe { width: 5px; height: 5px; background: var(--ochre); }
+.legend-dot.included { width: 9px; height: 9px; background: #4b7d6e; border: 1px solid #4b7d6e; }
+.legend-dot.maybe { width: 9px; height: 9px; background: white; border: 2px solid #4b7d6e; }
 .legend-line.road { border-color: var(--ochre); }
 .legend-line.return { width: 18px; height: 2px; border: 0; background: repeating-linear-gradient(to right, #87928f 0 10px, transparent 10px 15px); }
 .legend-line.air { width: 18px; height: 2px; border: 0; background: repeating-linear-gradient(to right, #315f55 0 2px, transparent 2px 6px); }

@@ -1,5 +1,6 @@
 import { kimberleyBookmarks, kimberleyDirection, kimberleyIdeas } from './kimberleyData.js'
 import { flightIdeas } from './flightData.js'
+import { waDeeperBookmarks, waDeeperDirection, waDeeperIdeas } from './waDeeperData.js'
 
 const asset = (name) => `${import.meta.env.BASE_URL}images/${name}`
 
@@ -320,6 +321,7 @@ export const seedIdeas = [
     rationale: 'Two nights avoids attempting a major coastal walk between city traffic and a long-haul departure.',
     gallery: [galleryImage('royal-coast', 'royal-national-park.jpg', 'The Coast Walk, Royal National Park', 'Alex Proimos', 'CC BY 2.0', 'https://commons.wikimedia.org/wiki/File:Bushland,_Royal_National_Park,_The_Coast_Walk,_NSW_Australia_(4045437811).jpg')],
   },
+  ...waDeeperIdeas,
   ...kimberleyIdeas,
   ...flightIdeas,
 ]
@@ -356,12 +358,7 @@ export const scenarios = [
     order: ['perth', 'margaret-river', 'southern-forests', 'perth-melbourne-transit', 'vic-melbourne', 'vic-great-ocean', 'vic-prom', 'melbourne-sydney-transit', 'nsw-sydney', 'nsw-blue', 'nsw-royal'],
     plan: directionPlan({ perth: ['included', 2], 'margaret-river': ['included', 4], 'southern-forests': ['included', 3], esperance: ['maybe', 4], 'perth-melbourne-transit': ['included', 1], 'vic-melbourne': ['included', 2], 'vic-great-ocean': ['included', 4], 'vic-prom': ['included', 3], 'melbourne-sydney-transit': ['included', 1], 'nsw-sydney': ['included', 3], 'nsw-blue': ['included', 2], 'nsw-royal': ['included', 1] }),
   },
-  {
-    id: 'wa-deeper', name: 'WA deeper', days: 25, pace: 'Road-trip focused', transit: 'No domestic flight until the return connection',
-    image: asset('margaret-river.jpg'), summary: 'Trade the cross-country touring for more beaches, forests and breathing room in Western Australia.',
-    pros: ['Simplest logistics', 'More weather flexibility', 'Fewer packing days'],
-    plan: directionPlan({ perth: ['included', 3], 'margaret-river': ['included', 7], 'southern-forests': ['included', 8], esperance: ['included', 7] }),
-  },
+  { ...waDeeperDirection, plan: directionPlan(waDeeperDirection.choices), choices: undefined },
 ]
 
 export const flightNotes = [
@@ -383,6 +380,7 @@ export const flightNotes = [
 
 export const seedBookmarks = [
   ...kimberleyBookmarks,
+  ...waDeeperBookmarks,
   { id: 'william-bay-parks', label: 'William Bay National Park', href: 'https://exploreparks.dbca.wa.gov.au/park/william-bay-national-park', category: 'Research', scope: 'Denmark & Albany', ideaIds: ['wa-denmark-albany'], note: 'Official Greens Pool, Elephant Rocks, access and construction information.', pinned: true },
   { id: 'fitzgerald-parks', label: 'Fitzgerald River National Park', href: 'https://exploreparks.dbca.wa.gov.au/park/fitzgerald-river-national-park', category: 'Research', scope: 'Bremer Bay / Fitzgerald River', ideaIds: ['wa-bremer-fitzgerald'], note: 'Official park access, walks, alerts and facilities.', pinned: false },
   { id: 'maria-parks', label: 'Maria Island and Painted Cliffs', href: 'https://parks.tas.gov.au/explore-our-parks/maria-island-national-park/painted-cliffs', category: 'Research', scope: 'Maria Island', ideaIds: ['tas-maria'], note: 'Official ferry, tide, safety and walking information.', pinned: false },

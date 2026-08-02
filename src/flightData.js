@@ -23,6 +23,7 @@ const flightIdea = (id, name, routeFrom, routeTo, coordinates, summary) => ({
 })
 
 export const flightIdeas = [
+  flightIdea('perth-london-transit', 'Perth → London flight', 'Perth', 'London', [115.8605, -31.9505], 'A one-day long-haul departure block after the protected Perth buffer night.'),
   flightIdea('tas-sydney-transit', 'Hobart → Sydney flight', 'Hobart', 'Sydney', [151.2093, -33.8688], 'A one-day domestic transfer into the likely UK departure city.'),
   flightIdea('perth-melbourne-transit', 'Perth → Melbourne flight', 'Perth', 'Melbourne', [144.9631, -37.8136], 'A one-day domestic transfer between the WA and Victoria road sections.'),
   flightIdea('melbourne-sydney-transit', 'Melbourne → Sydney flight', 'Melbourne', 'Sydney', [151.2093, -33.8688], 'A one-day domestic transfer before the Sydney finish.'),

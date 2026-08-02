@@ -210,6 +210,9 @@ export default function IdeaDetail({ idea, scheduleEntry, sources, direction, di
           <span className="section-label">Late Oct / November</span>
           <p>{idea.season || 'Seasonal notes to add.'}</p>
         </section>
+        {idea.stay && <section><span className="section-label">Where to stay</span><p>{idea.stay}</p></section>}
+        {idea.access && <section><span className="section-label">4x4 & access</span><p>{idea.access}</p></section>}
+        {idea.conditional && <section><span className="section-label">Choose by conditions</span><p>{idea.conditional}</p></section>}
       </div>
 
       <section className="commentary-editor">

@@ -74,6 +74,7 @@ function flightDatesForSchedule(schedule) {
     ['tas-sydney-transit', 'hobart-sydney'],
     ['perth-melbourne-transit', 'perth-melbourne'],
     ['melbourne-sydney-transit', 'melbourne-sydney'],
+    ['perth-london-transit', 'perth-london'],
   ])
   entries.forEach((entry) => {
     const flightId = flightCardIds.get(entry.id)
@@ -157,7 +158,7 @@ function MapMarker({ idea, projection, selected, showLabel, onSelect }) {
   return (
     <g className={`${selected ? 'active-marker' : ''} ${idea.status === 'maybe' ? 'maybe-marker' : ''}`} role="button" tabIndex="0" aria-label={`Open ${idea.name}`} onClick={() => onSelect(idea.id)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(idea.id) }}>
       <title>{idea.name}</title>
-      <circle className={`map-marker ${ideaDisplayColor(idea)}`} cx={point[0]} cy={point[1]} r={idea.status === 'maybe' ? 2.25 : 3.65} />
+      <circle className={`map-marker ${ideaDisplayColor(idea)}`} cx={point[0]} cy={point[1]} r="3.65" />
       <circle className="map-marker-hit" cx={point[0]} cy={point[1]} r="9" />
       {(selected || showLabel) && <text className="selected-map-label" x={labelToLeft ? point[0] - 7 : point[0] + 7} y={point[1] - 7} textAnchor={labelToLeft ? 'end' : 'start'}>{idea.mapLabel || idea.name}</text>}
     </g>
@@ -232,7 +233,7 @@ export default function MapPanel({ ideas, selectedIdea, onSelect, onReorder, sou
     return { ...flight, date, href: datedFlightHref(flight, date) }
   })
   const mapRoutes = useMemo(() => {
-    const scheduled = ideas.filter((idea) => idea.status !== 'excluded' && idea.kind !== 'flight' && idea.coordinates)
+    const scheduled = ideas.filter((idea) => idea.status !== 'excluded' && idea.kind !== 'flight' && !idea.hideFromRoadRoute && idea.coordinates)
     const groups = []
     scheduled.forEach((idea) => {
       const category = routeGroup(idea)

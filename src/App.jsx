@@ -10,7 +10,7 @@ import { scenarios as seedDirections, seedBookmarks, seedIdeas } from './data.js
 import { buildSchedule } from './schedule.js'
 
 const STORAGE_KEY = 'drift-australia-2026-v1'
-const DATA_VERSION = 15
+const DATA_VERSION = 16
 const seedIdeaById = new Map(seedIdeas.map((idea) => [idea.id, idea]))
 const seedGalleryIds = new Set(seedIdeas.flatMap((idea) => (idea.gallery || []).map((image) => image.id)))
 const seedBookmarkById = new Map(seedBookmarks.map((bookmark) => [bookmark.id, bookmark]))
@@ -24,6 +24,7 @@ const V5_REMOVED_IDEA_IDS = new Set(['adelaide-ki'])
 const V5_SEED_REFRESH_FIELDS = ['name', 'region', 'summary', 'color', 'coordinates', 'mapLabel', 'highlights', 'timestamps', 'note', 'tradeoffs', 'season', 'rationale']
 const V13_UPDATED_DIRECTION_IDS = new Set(['wa-tas-sydney'])
 const V14_UPDATED_DIRECTION_IDS = new Set(['wa-south-kimberley'])
+const V16_UPDATED_DIRECTION_IDS = new Set(['wa-deeper'])
 const V14_KIMBERLEY_ID_PREFIXES = ['kimberley-', 'wa-kimberley-']
 const V15_FLIGHT_INSERTIONS = new Map([
   ['wa-tas-sydney', [['wa-tas-transit', 'tas-hobart'], ['tas-sydney-transit', 'nsw-sydney']]],
@@ -194,6 +195,10 @@ function parseImportedPlan(payload) {
     const importedIdeaIds = new Set(importedIdeas.map((idea) => idea.id))
     seedIdeas.filter((idea) => !importedIdeaIds.has(idea.id)).forEach((idea) => importedIdeas.push(idea))
   }
+  if (Number(payload.version || 0) < 16) {
+    const importedIdeaIds = new Set(importedIdeas.map((idea) => idea.id))
+    seedIdeas.filter((idea) => !importedIdeaIds.has(idea.id)).forEach((idea) => importedIdeas.push(idea))
+  }
 
   const directionIds = new Set()
   let importedDirections = payload.directions.map((direction, index) => {
@@ -212,6 +217,9 @@ function parseImportedPlan(payload) {
       return normaliseDirection(seedDirectionById.get(direction.id), importedIdeas)
     }
     if (Number(payload.version || 0) < 14 && V14_UPDATED_DIRECTION_IDS.has(direction.id)) {
+      return normaliseDirection(seedDirectionById.get(direction.id), importedIdeas)
+    }
+    if (Number(payload.version || 0) < 16 && V16_UPDATED_DIRECTION_IDS.has(direction.id)) {
       return normaliseDirection(seedDirectionById.get(direction.id), importedIdeas)
     }
     return normaliseDirection({
@@ -245,6 +253,10 @@ function parseImportedPlan(payload) {
 
   const importedBookmarks = Array.isArray(payload.bookmarks) ? [...payload.bookmarks] : []
   if (Number(payload.version || 0) < 13) {
+    const importedBookmarkIds = new Set(importedBookmarks.map((bookmark) => bookmark.id))
+    seedBookmarks.filter((bookmark) => !importedBookmarkIds.has(bookmark.id)).forEach((bookmark) => importedBookmarks.push(bookmark))
+  }
+  if (Number(payload.version || 0) < 16) {
     const importedBookmarkIds = new Set(importedBookmarks.map((bookmark) => bookmark.id))
     seedBookmarks.filter((bookmark) => !importedBookmarkIds.has(bookmark.id)).forEach((bookmark) => importedBookmarks.push(bookmark))
   }
@@ -370,12 +382,17 @@ function loadState() {
       const savedBookmarkIds = new Set(bookmarks.map((bookmark) => bookmark.id))
       seedBookmarks.filter((bookmark) => !savedBookmarkIds.has(bookmark.id)).forEach((bookmark) => bookmarks.push(bookmark))
     }
+    if ((saved.version || 0) < 16) {
+      const savedBookmarkIds = new Set(bookmarks.map((bookmark) => bookmark.id))
+      seedBookmarks.filter((bookmark) => !savedBookmarkIds.has(bookmark.id)).forEach((bookmark) => bookmarks.push(bookmark))
+    }
     let directions = ((saved.version || 0) >= 5 && Array.isArray(saved.directions) && saved.directions.length
       ? saved.directions.map((direction) => {
         const currentSeed = seedDirectionById.get(direction.id)
         if (!currentSeed) return direction
         if ((saved.version || 0) < 13 && V13_UPDATED_DIRECTION_IDS.has(direction.id)) return currentSeed
         if ((saved.version || 0) < 14 && V14_UPDATED_DIRECTION_IDS.has(direction.id)) return currentSeed
+        if ((saved.version || 0) < 16 && V16_UPDATED_DIRECTION_IDS.has(direction.id)) return currentSeed
         return {
           ...direction,
           name: currentSeed.name,
@@ -404,7 +421,7 @@ function loadState() {
       ...clean,
       ...saved,
       version: DATA_VERSION,
-      ideas: (saved.version || 0) < 15 && appliedDirection ? ideasForDirection(ideas, appliedDirection) : ideas,
+      ideas: (saved.version || 0) < 16 && appliedDirection ? ideasForDirection(ideas, appliedDirection) : ideas,
       bookmarks,
       directions,
       appliedDirectionId,
