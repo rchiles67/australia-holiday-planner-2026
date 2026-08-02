@@ -1,6 +1,6 @@
 # Photo and map credits
 
-All bundled travel photographs were selected from Wikimedia Commons with a licence or public-domain statement on the linked source page. Attribution also appears in each in-app gallery.
+The core bundled travel photographs were selected from Wikimedia Commons with a licence or public-domain statement on the linked source page. The WA planning galleries additionally include the user-supplied research images listed below for personal planning use. Attribution also appears in each in-app gallery.
 
 | File in this project | Subject | Creator | Licence | Source |
 |---|---|---|---|---|
@@ -34,5 +34,40 @@ All bundled travel photographs were selected from Wikimedia Commons with a licen
 | `sydney-harbour.jpg` | Sydney Harbour | Shiv Travelogue | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Sydney_Shot.jpg) |
 | `blue-mountains.jpg` | Three Sisters, Blue Mountains | Dietmar Rabich | CC BY-SA 4.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Blue_Mountains_National_Park_(AU),_Three_Sisters_--_2019_--_1987-9.jpg) |
 | `royal-national-park.jpg` | The Coast Walk, Royal National Park | Alex Proimos | CC BY 2.0 | [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Bushland,_Royal_National_Park,_The_Coast_Walk,_NSW_Australia_(4045437811).jpg) |
+
+## Supplied WA planning images
+
+These copies are included for Hope and Richard's personal itinerary planning. Credits reproduce the source information in the supplied filenames; they are not a claim that the images are openly licensed for reuse elsewhere.
+
+| App file | Subject | Filename credit |
+|---|---|---|
+| `wa-supplied/perth-sunset-kings-park.jpg` | Perth sunset from Kings Park | Perth Weekend |
+| `wa-supplied/perth-kings-park.jpg` | Kings Park and Botanic Garden | WA Tourism / Tourist Places |
+| `wa-supplied/fremantle-high-street.jpg` | High Street, Fremantle | Richard Keeler / Wikipedia |
+| `wa-supplied/cape-naturaliste-lighthouse-portrait.jpg` | Cape Naturaliste lighthouse | Gnangarra / Wikipedia |
+| `wa-supplied/yallingup-smiths-beach.jpg` | Smiths Beach | Wikipedia |
+| `wa-supplied/yallingup-road.jpg` | Yallingup coast road | Gnangarra / Wikipedia |
+| `wa-supplied/yeagarup-dunes.jpg` | Yeagarup dunes and lake | Roaming Down Under |
+| `wa-supplied/valley-giants-walk.jpg` | Valley of the Giants Tree Top Walk | Viator |
+| `wa-supplied/denmark-elephant-rocks.jpg` | Elephant Rocks | Western Australia Travel |
+| `wa-supplied/albany-gap.jpg` | The Gap, Albany | Source not stated in filename |
+| `wa-supplied/west-cape-howe-shelley.jpg` | Shelley Beach and West Cape Howe | Panoramio |
+| `wa-supplied/west-cape-howe-cliffs.jpg` | West Cape Howe National Park | Explore Oz |
+| `wa-supplied/two-peoples-bay-lake.jpg` | Two Peoples Bay landscape | Wikipedia |
+| `wa-supplied/two-peoples-bay-coast.jpg` | Two Peoples Bay coast | Wikipedia |
+| `wa-supplied/albany-bald-head-walk.jpg` | Bald Head Walk Trail coast | Wikipedia |
+| `wa-supplied/torndirrup-bald-head.jpg` | Torndirrup Peninsula toward Bald Head | Wikipedia |
+| `wa-supplied/stirling-range-panorama.jpg` | Stirling Range panorama | Tripadvisor |
+| `wa-supplied/stirling-bluff-knoll.jpg` | Bluff Knoll | Wikipedia |
+| `wa-supplied/bremer-blossoms.jpg` | Blossoms Beach | Bushtrax |
+| `wa-supplied/bremer-high-point.jpg` | Bremer Bay from the high point | Bushtrax |
+| `wa-supplied/fitzgerald-coast.jpg` | Fitzgerald Coast | Source not stated in filename |
+| `wa-supplied/hopetoun-foreshore.jpg` | Hopetoun foreshore | Fitzgerald Coast Tourism |
+| `wa-supplied/esperance-pink-lake.jpg` | Pink Lake | Australia Tourism |
+| `wa-supplied/cape-le-grand-hellfire.jpg` | Hellfire Bay | Tourism WA |
+| `wa-supplied/wharton-4wd.jpg` | Wharton Beach 4WD picnic | Bush and Bay |
+| `wa-supplied/cape-arid-beach-walk.jpg` | Cape Arid coastal walk | Tripadvisor |
+| `wa-supplied/cape-arid-tagon-trail.jpg` | Tagon Coastal Trail | Bronwyn Wells / Explore Parks WA |
+| `wa-supplied/wave-rock-expedia.jpg` | Wave Rock | Expedia |
 
 Map coastline and national boundary: [Natural Earth 1:10m Admin 0 Countries](https://www.naturalearthdata.com/downloads/10m-cultural-vectors/10m-admin-0-countries/), public domain.

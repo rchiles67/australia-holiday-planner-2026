@@ -1,6 +1,6 @@
 import { kimberleyBookmarks, kimberleyDirection, kimberleyIdeas } from './kimberleyData.js'
 import { flightIdeas } from './flightData.js'
-import { waDeeperBookmarks, waDeeperDirection, waDeeperIdeas } from './waDeeperData.js'
+import { waDeeperBookmarks, waDeeperDirection, waDeeperIdeas, waSuppliedGalleries } from './waDeeperData.js'
 
 const asset = (name) => `${import.meta.env.BASE_URL}images/${name}`
 
@@ -324,7 +324,13 @@ export const seedIdeas = [
   ...waDeeperIdeas,
   ...kimberleyIdeas,
   ...flightIdeas,
-]
+].map((idea) => {
+  const suppliedGallery = waSuppliedGalleries[idea.id] || []
+  if (!suppliedGallery.length) return idea
+  const gallery = [...(idea.gallery || []), ...suppliedGallery]
+  const requestedCover = gallery.find((image) => image.id === idea.coverImageId)
+  return { ...idea, gallery, image: requestedCover?.src || idea.image }
+})
 
 const directionPlan = (choices) => Object.fromEntries(seedIdeas.map((idea) => [idea.id, choices[idea.id] || ['excluded', idea.days]]))
 

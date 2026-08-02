@@ -10,7 +10,7 @@ import { scenarios as seedDirections, seedBookmarks, seedIdeas } from './data.js
 import { buildSchedule } from './schedule.js'
 
 const STORAGE_KEY = 'drift-australia-2026-v1'
-const DATA_VERSION = 16
+const DATA_VERSION = 19
 const seedIdeaById = new Map(seedIdeas.map((idea) => [idea.id, idea]))
 const seedGalleryIds = new Set(seedIdeas.flatMap((idea) => (idea.gallery || []).map((image) => image.id)))
 const seedBookmarkById = new Map(seedBookmarks.map((bookmark) => [bookmark.id, bookmark]))
@@ -25,6 +25,7 @@ const V5_SEED_REFRESH_FIELDS = ['name', 'region', 'summary', 'color', 'coordinat
 const V13_UPDATED_DIRECTION_IDS = new Set(['wa-tas-sydney'])
 const V14_UPDATED_DIRECTION_IDS = new Set(['wa-south-kimberley'])
 const V16_UPDATED_DIRECTION_IDS = new Set(['wa-deeper'])
+const V18_UPDATED_COVER_IDS = new Set(['wa-albany-torndirrup', 'wa-stirling-range', 'wa-cape-arid'])
 const V14_KIMBERLEY_ID_PREFIXES = ['kimberley-', 'wa-kimberley-']
 const V15_FLIGHT_INSERTIONS = new Map([
   ['wa-tas-sydney', [['wa-tas-transit', 'tas-hobart'], ['tas-sydney-transit', 'nsw-sydney']]],
@@ -123,6 +124,19 @@ function refreshV15Idea(idea) {
   return idea
 }
 
+function refreshV18Idea(idea) {
+  const currentSeed = seedIdeaById.get(idea.id)
+  if (!currentSeed) return idea
+  const gallery = [...(idea.gallery || [])]
+  const galleryIds = new Set(gallery.map((image) => image.id))
+  ;(currentSeed.gallery || []).filter((image) => !galleryIds.has(image.id)).forEach((image) => gallery.push(image))
+  const coverImageId = V18_UPDATED_COVER_IDS.has(idea.id)
+    ? currentSeed.coverImageId
+    : idea.coverImageId || currentSeed.coverImageId
+  const cover = gallery.find((image) => image.id === coverImageId)
+  return rebindSeedIdeaImages({ ...idea, gallery, coverImageId, image: cover?.src || idea.image || currentSeed.image }, currentSeed)
+}
+
 function ideasForDirection(ideas, direction) {
   if (!direction) return ideas
   const order = new Map((direction.order || []).map((id, index) => [id, index]))
@@ -199,6 +213,7 @@ function parseImportedPlan(payload) {
     const importedIdeaIds = new Set(importedIdeas.map((idea) => idea.id))
     seedIdeas.filter((idea) => !importedIdeaIds.has(idea.id)).forEach((idea) => importedIdeas.push(idea))
   }
+  if (Number(payload.version || 0) < 19) importedIdeas = importedIdeas.map(refreshV18Idea)
 
   const directionIds = new Set()
   let importedDirections = payload.directions.map((direction, index) => {
@@ -353,7 +368,8 @@ function loadState() {
         mergedIdea.area = currentSeed.area
         mergedIdea.mapGroup = currentSeed.mapGroup
       }
-      return rebindSeedIdeaImages((saved.version || 0) < 15 ? refreshV15Idea(mergedIdea) : mergedIdea, currentSeed)
+      const refreshedIdea = (saved.version || 0) < 15 ? refreshV15Idea(mergedIdea) : mergedIdea
+      return (saved.version || 0) < 19 ? refreshV18Idea(refreshedIdea) : rebindSeedIdeaImages(refreshedIdea, currentSeed)
     })
     seedIdeas.filter((idea) => !savedIds.has(idea.id)).forEach((idea) => ideas.push(idea))
     if ((saved.version || 0) < 6) {
@@ -421,7 +437,7 @@ function loadState() {
       ...clean,
       ...saved,
       version: DATA_VERSION,
-      ideas: (saved.version || 0) < 16 && appliedDirection ? ideasForDirection(ideas, appliedDirection) : ideas,
+      ideas: (saved.version || 0) < 19 && appliedDirection ? ideasForDirection(ideas, appliedDirection) : ideas,
       bookmarks,
       directions,
       appliedDirectionId,

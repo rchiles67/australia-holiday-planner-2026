@@ -4,6 +4,72 @@ const photo = (id, file, caption, credit, license, sourceUrl) => ({
   id, src: asset(file), caption, credit, license, sourceUrl,
 })
 
+const suppliedPhoto = (id, file, caption, credit) => photo(
+  id,
+  `wa-supplied/${file}`,
+  caption,
+  credit,
+  'Supplied planning image · personal use',
+  '',
+)
+
+export const waSuppliedGalleries = {
+  perth: [
+    suppliedPhoto('supplied-perth-sunset', 'perth-sunset-kings-park.jpg', 'Perth sunset from Kings Park', 'Perth Weekend'),
+    suppliedPhoto('supplied-perth-garden', 'perth-kings-park.jpg', 'Kings Park and Botanic Garden', 'WA Tourism / Tourist Places'),
+    suppliedPhoto('supplied-fremantle-high-street', 'fremantle-high-street.jpg', 'High Street, Fremantle', 'Richard Keeler / Wikipedia'),
+  ],
+  'wa-cape-naturaliste': [
+    suppliedPhoto('supplied-naturaliste-lighthouse', 'cape-naturaliste-lighthouse-portrait.jpg', 'Cape Naturaliste lighthouse', 'Gnangarra / Wikipedia'),
+    suppliedPhoto('supplied-smiths-beach', 'yallingup-smiths-beach.jpg', 'Smiths Beach', 'Wikipedia'),
+    suppliedPhoto('supplied-yallingup-road', 'yallingup-road.jpg', 'Yallingup coast road', 'Gnangarra / Wikipedia'),
+  ],
+  'wa-pemberton-yeagarup': [
+    suppliedPhoto('supplied-yeagarup-dunes', 'yeagarup-dunes.jpg', 'Yeagarup dunes and lake', 'Roaming Down Under'),
+  ],
+  'wa-denmark-william-bay': [
+    suppliedPhoto('supplied-valley-giants', 'valley-giants-walk.jpg', 'Valley of the Giants Tree Top Walk', 'Viator'),
+    suppliedPhoto('supplied-elephant-rocks', 'denmark-elephant-rocks.jpg', 'Elephant Rocks', 'Western Australia Travel'),
+  ],
+  'wa-albany-torndirrup': [
+    suppliedPhoto('supplied-albany-gap', 'albany-gap.jpg', 'The Gap, Albany', 'Supplied image; original credit not stated'),
+    suppliedPhoto('supplied-shelley-beach', 'west-cape-howe-shelley.jpg', 'Shelley Beach and West Cape Howe', 'Panoramio'),
+    suppliedPhoto('supplied-west-cape-howe-cliffs', 'west-cape-howe-cliffs.jpg', 'West Cape Howe National Park', 'Explore Oz'),
+    suppliedPhoto('supplied-two-peoples-lake', 'two-peoples-bay-lake.jpg', 'Two Peoples Bay landscape', 'Wikipedia'),
+    suppliedPhoto('supplied-two-peoples-coast', 'two-peoples-bay-coast.jpg', 'Two Peoples Bay coast', 'Wikipedia'),
+    suppliedPhoto('supplied-bald-head-walk', 'albany-bald-head-walk.jpg', 'Bald Head Walk Trail coast', 'Wikipedia'),
+    suppliedPhoto('supplied-torndirrup-bald-head', 'torndirrup-bald-head.jpg', 'Torndirrup Peninsula toward Bald Head', 'Wikipedia'),
+  ],
+  'wa-stirling-range': [
+    suppliedPhoto('supplied-stirling-range', 'stirling-range-panorama.jpg', 'Stirling Range panorama', 'Tripadvisor'),
+    suppliedPhoto('supplied-bluff-knoll', 'stirling-bluff-knoll.jpg', 'Bluff Knoll', 'Wikipedia'),
+  ],
+  'wa-bremer-bay': [
+    suppliedPhoto('supplied-blossoms-beach', 'bremer-blossoms.jpg', 'Blossoms Beach', 'Bushtrax'),
+    suppliedPhoto('supplied-bremer-high-point', 'bremer-high-point.jpg', 'Bremer Bay from the high point', 'Bushtrax'),
+  ],
+  'wa-fitzgerald-hopetoun': [
+    suppliedPhoto('supplied-fitzgerald-coast', 'fitzgerald-coast.jpg', 'Fitzgerald Coast', 'Supplied image; original credit not stated'),
+    suppliedPhoto('supplied-hopetoun', 'hopetoun-foreshore.jpg', 'Hopetoun foreshore', 'Fitzgerald Coast Tourism'),
+  ],
+  'wa-esperance-coast': [
+    suppliedPhoto('supplied-pink-lake', 'esperance-pink-lake.jpg', 'Pink Lake aerial view', 'Australia Tourism'),
+  ],
+  'wa-cape-le-grand': [
+    suppliedPhoto('supplied-hellfire-bay', 'cape-le-grand-hellfire.jpg', 'Hellfire Bay, Cape Le Grand National Park', 'Tourism WA'),
+  ],
+  'wa-wharton-beach': [
+    suppliedPhoto('supplied-wharton-4wd', 'wharton-4wd.jpg', 'Wharton Beach 4WD picnic', 'Bush and Bay'),
+  ],
+  'wa-cape-arid': [
+    suppliedPhoto('supplied-cape-arid-walk', 'cape-arid-beach-walk.jpg', 'Cape Arid coastal walk', 'Tripadvisor'),
+    suppliedPhoto('supplied-tagon-trail', 'cape-arid-tagon-trail.jpg', 'Tagon Coastal Trail', 'Bronwyn Wells / Explore Parks WA'),
+  ],
+  'wa-hyden': [
+    suppliedPhoto('supplied-wave-rock', 'wave-rock-expedia.jpg', 'Wave Rock, Hyden', 'Expedia'),
+  ],
+}
+
 const base = {
   region: 'Western Australia',
   area: 'Perth & Western Australia',
@@ -61,7 +127,7 @@ export const waDeeperIdeas = [
   {
     ...base, id: 'wa-albany-torndirrup', name: 'Albany & Torndirrup', days: 2,
     summary: 'Granite platforms, sea cliffs and the Southern Ocean at full scale.',
-    image: asset('albany-coast.jpg'), coverImageId: 'albany-southern-ocean', coordinates: [117.883, -35.024], mapLabel: 'Albany & Torndirrup',
+    image: asset('wa-supplied/torndirrup-bald-head.jpg'), coverImageId: 'supplied-torndirrup-bald-head', coordinates: [117.883, -35.024], mapLabel: 'Albany & Torndirrup',
     highlights: ['The Gap and Natural Bridge', 'Bald Head or a shorter Torndirrup walk', 'Sheltered bays when the outer coast is too wild'],
     note: 'Albany is the logistics base; Torndirrup is the reason for the card. Keep the longest walk flexible until wind and visibility are clear.',
     rationale: 'Two nights protect a full headland day and avoid squeezing a major walk between the Denmark transfer and the Stirling Range.',
@@ -75,7 +141,7 @@ export const waDeeperIdeas = [
   {
     ...base, id: 'wa-stirling-range', name: 'Stirling Range', days: 1,
     summary: 'A mountain interlude with Bluff Knoll or a lower walk chosen by the weather.',
-    image: asset('stirling-range.jpg'), coverImageId: 'stirling-bluff-knoll', coordinates: [118.25, -34.38], mapLabel: 'Stirling Range',
+    image: asset('wa-supplied/stirling-range-panorama.jpg'), coverImageId: 'supplied-stirling-range', coordinates: [118.25, -34.38], mapLabel: 'Stirling Range',
     highlights: ['Bluff Knoll in a safe weather window', 'Mount Hassell or a shorter alternative', 'A night close to the ranges for an early start'],
     note: 'Drive via Two Peoples Bay, sleep near the range, then walk before continuing to Bremer Bay. The summit is optional; the landscape is not.',
     rationale: 'One overnight creates an early-morning mountain window without turning the range into a long detour.',
@@ -159,7 +225,7 @@ export const waDeeperIdeas = [
   {
     ...base, id: 'wa-cape-arid', name: 'Cape Arid extension', days: 3,
     summary: 'A genuinely remote eastern extension for empty beaches, heath and Thomas River.',
-    image: '', coordinates: [123.16, -33.86], mapLabel: 'Cape Arid',
+    image: asset('wa-supplied/cape-arid-beach-walk.jpg'), coverImageId: 'supplied-cape-arid-walk', coordinates: [123.16, -33.86], mapLabel: 'Cape Arid',
     highlights: ['Thomas River and coastal heath', 'Tagon coastal trail or shorter walks', 'A remote camping night if conditions and confidence align'],
     note: 'This is deliberately “Maybe”. It is the trip’s honest optional extension, to include only after vehicle terms, park access, weather and appetite for remoteness are settled.',
     rationale: 'Three days are required to make the eastward drive, explore without haste and return toward Esperance/Hyden safely.',
